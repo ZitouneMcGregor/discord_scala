@@ -3,13 +3,11 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
-    container_name: adminbdds
+    container_name: adminbdd
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: "1234567aA*"  
       MYSQL_DATABASE: "AdminDiscord"       
-      MYSQL_USER: "user"                
-      MYSQL_PASSWORD: "1234567aA*"     
     ports:
       - "3036:3306"
     volumes:
