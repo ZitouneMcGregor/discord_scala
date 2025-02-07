@@ -74,6 +74,25 @@ object ServerDAO {
     }
   }
 
+  def deleteServer(id: Int): Boolean = {
+    val connection = DatabaseConfig.getConnection
+    val query = "DELETE FROM SERVER WHERE id = ?"
+    
+      try {
+        val statement = connection.prepareStatement(query)
+        statement.setInt(1, id)
+
+        val rowsDeleted = statement.executeUpdate()
+        rowsDeleted > 0
+      } catch {
+        case e: Exception =>
+          e.printStackTrace()
+          false
+      } finally {
+        connection.close()
+      }
+  }
+
   def getServerByName(name: String): Option[Server] = {
     val connection = DatabaseConfig.getConnection
     val query = "SELECT * FROM SERVER WHERE name = ?"

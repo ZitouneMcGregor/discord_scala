@@ -42,6 +42,13 @@ object ServerRoutes extends ServerJsonFormats {
               complete(StatusCodes.InternalServerError -> "Error updating Server")
             }
           }
+        } ~
+        delete {
+          if (ServerDAO.deleteServer(id)) {
+            complete(StatusCodes.OK -> s"Server with ID $id deleted successfully")
+          } else {
+            complete(StatusCodes.NotFound -> s"Server with ID $id not found")
+          }
         }
       } ~
       path("search" / Segment) { name => // La requete doit être server/search/nom_du_server
