@@ -9,13 +9,12 @@ import org.apache.pekko.http.scaladsl.server.Route
 import spray.json._
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
-trait JsonFormats extends DefaultJsonProtocol {
+trait UserJsonFormats extends DefaultJsonProtocol {
   implicit val userFormat: RootJsonFormat[User] = jsonFormat3(User.apply)
   implicit val userListFormat: RootJsonFormat[List[User]] = listFormat(userFormat)
 }
 
-
-object UserRoutes extends JsonFormats {
+object UserRoutes extends UserJsonFormats {
   val route: Route =
     path("users") {
 

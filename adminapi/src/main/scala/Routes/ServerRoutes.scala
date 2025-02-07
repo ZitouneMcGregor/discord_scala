@@ -14,22 +14,44 @@ trait ServerJsonFormats extends DefaultJsonProtocol {
   implicit val serverFormat: RootJsonFormat[Server] = jsonFormat3(Server.apply)
   implicit val serverListFormat: RootJsonFormat[List[Server]] = listFormat(serverFormat)
 }
-
 object ServerRoutes extends ServerJsonFormats {
   val route: Route =
-    path("server") {
-
-      post {
-        entity(as[Server]) { server =>
-          if (ServerDAO.insertServer(server)) {
-            complete(StatusCodes.Created -> "Server inserted successfully")
-          } else {
-            complete(StatusCodes.InternalServerError -> "Error inserting Server")
+    pathPrefix("server") {
+      pathEnd {
+        post {
+          entity(as[Server]) { server =>
+            if (ServerDAO.insertServer(server)) {
+              complete(StatusCodes.Created -> "Server inserted successfully")
+            } else {
+              complete(StatusCodes.InternalServerError -> "Error inserting Server")
+            }
+          }
+        } ~
+        get {
+          complete(ServerDAO.getAllServer)
+        } 
+       
+      } ~
+      path(IntNumber) { id =>
+        put {
+          entity(as[Server]) { server =>
+            val updatedServer = server.copy(id = Some(id)) // Update the server with the id from the URL
+            if (ServerDAO.updateServer(updatedServer)) {
+              complete(StatusCodes.OK -> "Server updated successfully")
+            } else {
+              complete(StatusCodes.InternalServerError -> "Error updating Server")
+            }
           }
         }
       } ~
-      get {
-        complete(ServerDAO.getAllServer)
+      path("search" / Segment) { name => // La requete doit être server/search/nom_du_server
+        get {
+          val server = ServerDAO.getServerByName(name)
+          server match {
+            case Some(s) => complete(s)
+            case None    => complete(StatusCodes.NotFound -> s"Server with name $name not found")
+          }
+        }
       }
     }
 }

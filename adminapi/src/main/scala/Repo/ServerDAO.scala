@@ -53,5 +53,53 @@ object ServerDAO {
     server.toList
   }
 
+  def updateServer(server: Server): Boolean = {
+    val connection = DatabaseConfig.getConnection
+    val query = "UPDATE SERVER SET name = ?, img = ? WHERE id = ?"
+    
+    try {
+      val statement: PreparedStatement = connection.prepareStatement(query)
+      statement.setString(1, server.name)
+      statement.setString(2, server.img)
+      statement.setInt(3, server.id.getOrElse(0)) // On suppose que 'id' est de type Option[Int]
+      
+      val rowsUpdated = statement.executeUpdate()
+      rowsUpdated > 0
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        false
+    } finally {
+      connection.close()
+    }
+  }
+
+  def getServerByName(name: String): Option[Server] = {
+    val connection = DatabaseConfig.getConnection
+    val query = "SELECT * FROM SERVER WHERE name = ?"
+    
+    try {
+      val statement = connection.prepareStatement(query)
+      statement.setString(1, name)
+      val resultSet = statement.executeQuery()
+
+      if (resultSet.next()) {
+        Some(Server(
+          Some(resultSet.getInt("id")),
+          resultSet.getString("name"),
+          resultSet.getString("img")
+        ))
+      } else {
+        None
+      }
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        None
+    } finally {
+      connection.close()
+    }
+  }
+
 }
 
