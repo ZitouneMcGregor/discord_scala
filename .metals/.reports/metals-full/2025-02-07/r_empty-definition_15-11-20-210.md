@@ -1,3 +1,14 @@
+error id: `<none>`.
+file://<WORKSPACE>/adminapi/src/main/scala/Routes/UserRoutes.scala
+empty definition using pc, found symbol in pc: `<none>`.
+empty definition using semanticdb
+|empty definition using fallback
+non-local guesses:
+	 -
+
+Document text:
+
+```scala
 package routes
 
 import models.User
@@ -18,6 +29,7 @@ trait UserJsonFormats extends DefaultJsonProtocol {
 object UserRoutes extends UserJsonFormats {
   val route: Route =
     path("users") {
+
       post {
         entity(as[User]) { user =>
           if (UserDAO.insertUser(user)) {
@@ -30,31 +42,10 @@ object UserRoutes extends UserJsonFormats {
       get {
         complete(UserDAO.getAllUsers)
       }
-    } ~
-    path("user" / Segment) { username =>
-      get {
-        UserDAO.getUserByUsername(username) match {
-          case Some(user) => complete(StatusCodes.OK, user)
-          case None => complete(StatusCodes.NotFound, s"User with username $username not found")
-        }
-      } ~
-      delete {
-        if (UserDAO.deleteUser(username)) {
-          complete(StatusCodes.OK -> s"User $username deleted successfully")
-        } else {
-          complete(StatusCodes.NotFound -> s"User $username not found or already deleted")
-        }
-      }
-    } ~
-    path("user" / Segment) { username =>
-      put {
-        entity(as[User]) { user =>
-          if (UserDAO.updateUser(username, user.username, user.password)) {
-            complete(StatusCodes.OK -> s"User $username updated successfully")
-          } else {
-            complete(StatusCodes.NotFound -> s"User $username not found")
-          }
-        }
-      }
     }
 }
+```
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: `<none>`.

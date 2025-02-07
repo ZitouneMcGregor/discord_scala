@@ -1,3 +1,19 @@
+error id: username.
+file://<WORKSPACE>/adminapi/src/main/scala/Repo/UserDAO.scala
+empty definition using pc, found symbol in pc: username.
+empty definition using semanticdb
+|empty definition using fallback
+non-local guesses:
+	 -user/username.
+	 -user/username#
+	 -user/username().
+	 -scala/Predef.user.username.
+	 -scala/Predef.user.username#
+	 -scala/Predef.user.username().
+
+Document text:
+
+```scala
 package dao
 
 import java.sql.PreparedStatement
@@ -84,51 +100,34 @@ object UserDAO {
   user
 }
 
-  def deleteUser(username: String): Boolean = {
+def deleteUser(username: String): Boolean = {
   val connection = DatabaseConfig.getConnection
-  val query = "UPDATE USER SET deleted = true WHERE username = ? AND deleted = false"
+  val query = "UPDATE USER SET deleted = false WHERE username = ?"
   var updated = false
 
   try {
-  val statement = connection.prepareStatement(query)
-  statement.setString(1, username)
-  val rowsUpdated = statement.executeUpdate()
+    val statement = connection.prepareStatement(query)
+    statement.setString(1, username)
+    val rowsUpdated = statement.executeUpdate()
 
-  updated = rowsUpdated > 0
+    updated = rowsUpdated > 0
   } catch {
-  case e: Exception =>
-    e.printStackTrace()
+    case e: Exception =>
+      e.printStackTrace()
   } finally {
-  connection.close()
+    connection.close()
   }
 
   updated
-  }
-
-  def updateUser(username: String, newUsername: String, newPassword: String): Boolean = {
-    val connection = DatabaseConfig.getConnection
-    val query = "UPDATE USER SET username = ?, password = ? WHERE username = ?"
-    var updated = false
-
-    try {
-      val statement = connection.prepareStatement(query)
-      statement.setString(1, newUsername)
-      statement.setString(2, newPassword)
-      statement.setString(3, username)
-      
-      val rowsUpdated = statement.executeUpdate()
-      updated = rowsUpdated > 0
-    } catch {
-      case e: Exception =>
-        e.printStackTrace()
-    } finally {
-      connection.close()
-    }
-
-    updated
-  }
+}
 
 
 
 }
 
+
+```
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: username.
