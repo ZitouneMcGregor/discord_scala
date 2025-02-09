@@ -9,6 +9,7 @@ import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import spray.json._
 import Repo.UserServerDAO
 import org.apache.pekko.http.scaladsl.model.StatusCodes
+import dao.UserDAO
 
 
 trait UserServerJsonFormats extends DefaultJsonProtocol{
@@ -41,7 +42,7 @@ object UserServerRoutes extends UserServerJsonFormats{
                                 complete(StatusCodes.InternalServerError ->"Error while deleting the user from the server")
                             }
                         }
-                    }
+                    } 
 
                 }
         }

@@ -8,6 +8,7 @@ import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.server.Route
 import spray.json._
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import Repo.UserServerDAO
 
 
 trait ServerJsonFormats extends DefaultJsonProtocol {
@@ -60,5 +61,11 @@ object ServerRoutes extends ServerJsonFormats {
           }
         }
       }
+    }~
+    path("users" / IntNumber / "servers") { user_id =>
+      get {
+        complete(UserServerDAO.getAllServerFromUser(user_id ))
+      }
+
     }
 }
