@@ -20,7 +20,14 @@ object UserServerDAO{
         try{
             val statement: PreparedStatement = connection.prepareStatement(query)
             statement.setInt(1, userServer.user_id)
-            statement.setInt(2, userServer.server_id)
+            
+
+            userServer.server_id match{
+                case Some(value) => statement.setInt(2, value)
+                case None => 
+                    println("Error, server id is null") 
+                    false
+            }
 
             val rowsInserted = statement.executeUpdate()
             rowsInserted > 0
@@ -41,7 +48,13 @@ object UserServerDAO{
         try{
             val statement: PreparedStatement = connection.prepareStatement(query)
             statement.setInt(1, userServer.user_id)
-            statement.setInt(2, userServer.server_id)
+            userServer.server_id match{
+                case Some(value) => statement.setInt(2, value)
+                case None => 
+                    println("Error, server id is null") 
+                    false
+            }
+
 
             val rowsInserted = statement.executeUpdate()
             rowsInserted > 0

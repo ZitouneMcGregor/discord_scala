@@ -61,7 +61,14 @@ object ServerDAO {
       val statement: PreparedStatement = connection.prepareStatement(query)
       statement.setString(1, server.name)
       statement.setString(2, server.img)
-      statement.setInt(3, server.id.getOrElse(0)) // On suppose que 'id' est de type Option[Int]
+
+      server.id match{
+        case Some(value) => statement.setInt(3, value)
+        case None => 
+          println("Error, id server is null")
+          false
+      }
+
       
       val rowsUpdated = statement.executeUpdate()
       rowsUpdated > 0

@@ -13,6 +13,7 @@ import routes.UserServerRoutes
 
 import scala.concurrent.ExecutionContext
 import scala.io.StdIn
+import Routes.RoomRoutes
 
 object Server extends App {
   implicit val system: ActorSystem = ActorSystem("discord-api")
@@ -20,7 +21,7 @@ object Server extends App {
   implicit val executionContext: ExecutionContext = system.dispatcher
 
 
-  val bindingFuture = Http().newServerAt("localhost", 8080).bind(UserRoutes.route ~ UserServerRoutes.route ~ ServerRoutes.route)
+  val bindingFuture = Http().newServerAt("localhost", 8080).bind(UserRoutes.route ~ UserServerRoutes.route ~ ServerRoutes.route ~ RoomRoutes.route)
 
   println("🚀 Server running at http://localhost:8080/")
   

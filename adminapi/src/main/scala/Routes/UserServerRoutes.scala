@@ -18,10 +18,12 @@ trait UserServerJsonFormats extends DefaultJsonProtocol{
 object UserServerRoutes extends UserServerJsonFormats{
 
     val route: Route =
+                pathPrefix("server" / IntNumber){ id_server =>
                 path("userServer"){
                     post{
                         entity(as[UserServer]) { userServer =>
-                            if(UserServerDAO.insertUserServer(userServer)){
+                            val userServerWithIdServer = userServer.copy(server_id = Some(id_server))
+                            if(UserServerDAO.insertUserServer(userServerWithIdServer)){
                                 complete(StatusCodes.Created -> "User added to the server successfully")
                             
                             }else{
@@ -29,11 +31,12 @@ object UserServerRoutes extends UserServerJsonFormats{
                             }
 
                         }
-                    }
+                    } ~
                     delete{
                         entity(as[UserServer]){ userServer =>
-                            if(UserServerDAO.deleteUserServer(userServer)){
-                                complete(StatusCodes.Created -> "User deleted from the server successfully")
+                            val userServerWithIdServer = userServer.copy(server_id = Some(id_server))
+                            if(UserServerDAO.deleteUserServer(userServerWithIdServer)){
+                                complete(StatusCodes.OK -> "User deleted from the server successfully")
                             }else{
                                 complete(StatusCodes.InternalServerError ->"Error while deleting the user from the server")
                             }
@@ -43,3 +46,4 @@ object UserServerRoutes extends UserServerJsonFormats{
                 }
         }
 
+    }
