@@ -1,6 +1,7 @@
 import models.User
 import dao.UserDAO
 import routes.UserRoutes
+import routes.PrivateChatRoutes
 import models.Server
 import dao.ServerDAO
 import routes.ServerRoutes
@@ -20,8 +21,9 @@ object Server extends App {
   implicit val materializer: Materializer = Materializer(system)
   implicit val executionContext: ExecutionContext = system.dispatcher
 
+  val routes = UserRoutes.route ~ PrivateChatRoutes.route ~ UserServerRoutes.route ~ ServerRoutes.route ~ RoomRoutes.route
 
-  val bindingFuture = Http().newServerAt("localhost", 8080).bind(UserRoutes.route ~ UserServerRoutes.route ~ ServerRoutes.route ~ RoomRoutes.route)
+  val bindingFuture = Http().newServerAt("localhost", 8080).bind(routes)
 
   println("🚀 Server running at http://localhost:8080/")
   

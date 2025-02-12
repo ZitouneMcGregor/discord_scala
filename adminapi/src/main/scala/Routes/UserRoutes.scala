@@ -17,6 +17,7 @@ trait UserJsonFormats extends DefaultJsonProtocol {
 
 
 
+
 object UserRoutes extends UserJsonFormats {
   val route: Route =
     path("users") {
