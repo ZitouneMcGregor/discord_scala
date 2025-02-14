@@ -1,31 +1,36 @@
 <template>
-    <div class="login">
-      <h2>Connexion</h2>
-      <input v-model="username" placeholder="Nom d'utilisateur" />
-      <input v-model="password" type="password" placeholder="Mot de passe" />
-      <button @click="handleLogin">Se connecter</button>
-    </div>
-  </template>
-  
-  <script setup>
-  import { ref } from 'vue'
-  import { login } from '../services/userService.js'
-  import { useUserStore } from '../store/userStore.js'
-  
-  const username = ref('')
-  const password = ref('')
-  const userStore = useUserStore()
-  
-  const handleLogin = async () => {
-    try {
-      const userData = await login(username.value, password.value)
-      userStore.setUser(userData)
-      alert('Connexion réussie !')
-    } catch (error) {
-      alert('Erreur de connexion')
-    }
+  <div class="login">
+    <h2>Connexion</h2>
+    <input v-model="username" placeholder="Nom d'utilisateur" />
+    <input v-model="password" type="password" placeholder="Mot de passe" />
+    <button @click="handleLogin">Se connecter</button>
+    <p v-if="error" class="error">{{ error }}</p>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router'; 
+import { login } from '../services/userService';
+import { useUserStore } from '../store/userStore';
+
+const username = ref('');
+const password = ref('');
+const error = ref('');
+const userStore = useUserStore();
+const router = useRouter(); 
+
+const handleLogin = async () => {
+  try {
+    const userData = await login(username.value, password.value);
+    userStore.setUser(userData);
+    localStorage.setItem('isUserConnected', 'true');
+    router.push('/');
+  } catch (err) {
+    error.value = 'Erreur de connexion : Nom d\'utilisateur ou mot de passe incorrect.';
   }
-  </script>
+};
+</script>
   
   <style scoped>
   .login {

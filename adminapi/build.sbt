@@ -11,6 +11,7 @@ lazy val root = (project in file(".")).
     )),
     name := "adminApi",
     libraryDependencies ++= Seq(
+      "org.apache.pekko" %% "pekko-http-cors" % "1.1.0",
       "org.apache.pekko" %% "pekko-http"                % pekkoHttpVersion,
       "org.apache.pekko" %% "pekko-http-spray-json"     % pekkoHttpVersion,
       "org.apache.pekko" %% "pekko-actor-typed"         % pekkoVersion,
