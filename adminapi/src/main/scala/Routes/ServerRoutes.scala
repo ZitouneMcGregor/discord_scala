@@ -9,15 +9,26 @@ import org.apache.pekko.http.scaladsl.server.Route
 import spray.json._
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import org.apache.pekko.http.cors.scaladsl.CorsDirectives._
+import org.apache.pekko.http.cors.scaladsl.settings.CorsSettings
+import org.apache.pekko.http.cors.scaladsl.model.HttpOriginMatcher
+import scala.collection.immutable.Seq
+import org.apache.pekko.http.scaladsl.model.HttpMethods._
+import org.apache.pekko.http.cors.scaladsl.model.HttpHeaderRange
+
+
 trait ServerJsonFormats extends DefaultJsonProtocol {
   implicit val serverFormat: RootJsonFormat[Server] = jsonFormat3(Server.apply)
   implicit val serverListFormat: RootJsonFormat[List[Server]] = listFormat(serverFormat)
 }
 object ServerRoutes extends ServerJsonFormats {
 
+  val corsSettings: CorsSettings = CorsSettings.defaultSettings
+  .withAllowedOrigins(HttpOriginMatcher.*)
+  .withAllowedMethods(Seq(GET, POST, PUT, DELETE, OPTIONS)) // S'assurer que OPTIONS est autorisé
+  .withAllowedHeaders(HttpHeaderRange.*)
 
   val route: Route =
-    cors() {
+    cors(corsSettings) {  
       pathPrefix("server") {
         pathEnd {
           post {
@@ -31,7 +42,7 @@ object ServerRoutes extends ServerJsonFormats {
           } ~
           get {
             complete(ServerDAO.getAllServer)
-          } 
+          }
         
         } ~
         path(IntNumber) { id =>
@@ -51,7 +62,15 @@ object ServerRoutes extends ServerJsonFormats {
             } else {
               complete(StatusCodes.NotFound -> s"Server with ID $id not found")
             }
-          }
+          } ~
+          get {
+            ServerDAO.getServerById(id) match {
+          case Some(server) =>
+            complete(server) // Successfully found server, return it
+          case None =>
+            complete(StatusCodes.NotFound -> s"Server with ID $id not found") // Server not found
+        }
+      }
         } ~
         path("search" / Segment) { name => // La requete doit être server/search/nom_du_server
           get {
