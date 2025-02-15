@@ -8,10 +8,15 @@
         <input type="text" v-model="img">
         
         <button @click="handleServerCreation">Create</button>
+        
     </div>
+    <ListAllServers></ListAllServers>
+    <SearchServer></SearchServer>
 </template>
 
 <script setup>
+import ListAllServers from '../components/ListAllServers.vue'
+import SearchServer from '../components/SearchServer.vue'
 import { ref } from 'vue'
 import { createServer } from '../services/serverService' 
 const name = ref('')
