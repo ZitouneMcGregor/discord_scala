@@ -14,6 +14,7 @@ import org.apache.pekko.http.cors.scaladsl.model.HttpOriginMatcher
 import scala.collection.immutable.Seq
 import org.apache.pekko.http.scaladsl.model.HttpMethods._
 import org.apache.pekko.http.cors.scaladsl.model.HttpHeaderRange
+import Repo.UserServerDAO
 
 
 trait ServerJsonFormats extends DefaultJsonProtocol {
@@ -82,5 +83,11 @@ object ServerRoutes extends ServerJsonFormats {
           }
         }
       }
+    }~
+    path("users" / IntNumber / "servers") { user_id =>
+      get {
+        complete(UserServerDAO.getAllServerFromUser(user_id ))
+      }
+
     }
 }

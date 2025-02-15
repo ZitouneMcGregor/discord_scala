@@ -3,5 +3,6 @@ package models
 case class User(
     id: Option[Int], 
     username: String, 
-    password: String
+    password: String,
+    deleted: Option[Boolean]
 )
