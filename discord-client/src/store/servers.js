@@ -4,13 +4,12 @@ import axios from 'axios';
 
 export const useServerStore = defineStore('servers', {
   state: () => ({
-    allServers: [],      // Tous les serveurs
-    userServers: [],     // Serveurs de l'user
-    unjoinedServers: [], // Serveurs pas encore rejoints (calculés)
+    allServers: [],
+    userServers: [],
+    unjoinedServers: [],
   }),
 
   actions: {
-    // 1. Récupère la liste de TOUS les serveurs
     async fetchAllServers() {
       try {
         const response = await axios.get('http://localhost:8080/server');
@@ -20,7 +19,6 @@ export const useServerStore = defineStore('servers', {
       }
     },
 
-    // 2. Récupère la liste des serveurs auxquels l'user est déjà
     async fetchUserServers(userId) {
       try {
         const response = await axios.get(`http://localhost:8080/users/${userId}/servers`);
@@ -32,7 +30,6 @@ export const useServerStore = defineStore('servers', {
 
     
 
-    // 3. Récupère tout + filtre localement (pas “propre” mais ça marche)
     async fetchUnjoinedServers(userId) {
       await this.fetchAllServers();
       await this.fetchUserServers(userId);
@@ -42,7 +39,6 @@ export const useServerStore = defineStore('servers', {
       );
     },
 
-    // 4. Crée un serveur (name, img)
     async createServer(serverName, serverImage) {
       try {
         const response = await axios.post('http://localhost:8080/server', {
@@ -50,7 +46,6 @@ export const useServerStore = defineStore('servers', {
           img: serverImage
         });
         if (response.status === 201) {
-          // On recharge la liste globale
           await this.fetchAllServers();
           return true;
         }
@@ -60,7 +55,6 @@ export const useServerStore = defineStore('servers', {
       return false;
     },
 
-    // 5. Permet à l'utilisateur de rejoindre un serveur
     async joinServer(userId, serverId) {
       try {
         const response = await axios.post(
@@ -72,11 +66,9 @@ export const useServerStore = defineStore('servers', {
         );
         if (response.status === 201) {
           console.log(`User ${userId} a rejoint le serveur ${serverId}`);
-          // Mise à jour localement : on enlève ce serveur de unjoinedServers
           this.unjoinedServers = this.unjoinedServers.filter(
             s => s.id !== serverId
           );
-          // Re-fetch userServers pour la sidebar
           await this.fetchUserServers(userId);
         }
       } catch (error) {
@@ -84,7 +76,6 @@ export const useServerStore = defineStore('servers', {
       }
     },
 
-    // 6. Quitter un serveur
     async leaveServer(userId, serverId) {
       try {
         const response = await axios.delete(`http://localhost:8080/server/${serverId}/userServer`, {
@@ -92,17 +83,13 @@ export const useServerStore = defineStore('servers', {
         });
         if (response.status === 200) {
           console.log(`Utilisateur ${userId} a quitté le serveur ${serverId}`);
-          // Optionnel : recharger la liste userServers
-          // await this.fetchUserServers(userId);
         }
       } catch (error) {
         console.error('Erreur lors du départ du serveur', error);
       }
     },
 
-    // 7. Mettre à jour un serveur
     async updateServer(serverData) {
-      // serverData = { id, name, image }
       try {
         const response = await axios.put(`http://localhost:8080/server/${serverData.id}`, {
           name: serverData.name,

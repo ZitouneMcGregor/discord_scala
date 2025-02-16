@@ -28,7 +28,6 @@
       const newPassword = ref('')
   
       async function updateProfile() {
-        // on appelle l'action updateUser
         const userName = authStore.user.username
         const success = await authStore.updateUser(userName, {
           newUsername: newUsername.value.trim(),

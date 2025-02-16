@@ -2,7 +2,6 @@
   <div class="home-container">
     <header class="home-header">
       <h1>Bienvenue, {{ authStore.user?.username }}</h1>
-      <!-- Bouton pour aller au profil -->
       <button class="btn-primary" @click="goToProfile">
           Mon profil
         </button>
@@ -12,7 +11,6 @@
     </header>
 
     <main class="home-content">
-      <!-- Formulaire de création de serveur -->
       <section class="create-server-section">
         <h2>Créer un serveur</h2>
         <input
@@ -30,7 +28,6 @@
         </button>
       </section>
 
-      <!-- Liste des serveurs NON rejoints -->
       <section class="servers-list-section">
         <h2>Serveurs disponibles (pas encore rejoints)</h2>
         <ul class="servers-list">
@@ -73,7 +70,6 @@ export default {
         router.push('/login')
         return
       }
-      // Charge la liste de serveurs non rejoints
       await serverStore.fetchUnjoinedServers(authStore.user.id)
     })
 
@@ -93,7 +89,6 @@ export default {
 
       const success = await serverStore.createServer(name, image)
       if (success) {
-        // Re-filtre la liste (si besoin)
         await serverStore.fetchUnjoinedServers(authStore.user.id)
         newServerName.value = ''
         newServerImage.value = ''
@@ -184,7 +179,6 @@ export default {
   background-color: #393c43;
 }
 
-/* Bouton principal */
 .btn-primary {
   background-color: #5865F2;
   color: white;

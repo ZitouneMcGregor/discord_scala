@@ -1,7 +1,5 @@
-<!-- src/views/DMView.vue -->
 <template>
     <div class="dm-layout">
-      <!-- Liste des chats privés à gauche -->
       <div class="dm-list-panel">
         <h2>Vos MP</h2>
         <ul>
@@ -11,13 +9,11 @@
             @click="selectChat(chat)"
             :class="{ selected: selectedChat && selectedChat.chatId === chat.chatId }"
           >
-            <!-- Par exemple, le nom du correspondant -->
             Conversation avec {{ chat.otherUserName }}
           </li>
         </ul>
       </div>
   
-      <!-- Le contenu du chat privé à droite -->
       <div class="dm-chat-panel">
         <PrivateChatView v-if="selectedChat" :chat="selectedChat" />
         <div v-else class="dm-chat-empty">
@@ -43,7 +39,6 @@
   const selectedChat = ref(null)
   
   onMounted(async () => {
-    // Charger la liste des MP
     await privateChatStore.fetchPrivateChats(userId)
   })
   

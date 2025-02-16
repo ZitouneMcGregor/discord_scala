@@ -48,9 +48,7 @@ export const useAuthStore = defineStore('auth', {
                 password: newPassword
               });
               if (response.status === 200) {
-                // Mettre à jour l'utilisateur localement si besoin
                 this.user.username = newUsername;
-                // (si le backend renvoie le user complet, tu peux réassigner `this.user = response.data;`)
                 localStorage.setItem('user', JSON.stringify(this.user));
                 return true;
               }

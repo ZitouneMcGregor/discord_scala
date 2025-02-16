@@ -47,19 +47,14 @@ export default {
     const authStore = useAuthStore()
     const privateChatStore = usePrivateChatStore()
 
-    // userId actuel
-    const currentUserId = authStore.user.id  // ou user?.id
+    const currentUserId = authStore.user.id
 
-    // Champ pour saisir l'ID de l’autre user
     const otherUserIdInput = ref('')
 
-    // Au montage, on charge la liste des private chats
     onMounted(async () => {
       await privateChatStore.fetchPrivateChats(currentUserId)
     })
 
-    // Méthode pour trouver l’autre user du chat
-    // (si user_id_1 = currentUserId, alors l’autre est user_id_2, etc.)
     function otherUserId(chat) {
       if (chat.user_id_1 === currentUserId) {
         return chat.user_id_2
@@ -68,7 +63,6 @@ export default {
       }
     }
 
-    // Créer un chat avec l’utilisateur otherUserIdInput
     async function createChat() {
       const otherId = parseInt(otherUserIdInput.value, 10)
       if (!otherId) return
@@ -84,7 +78,6 @@ export default {
       }
     }
 
-    // Supprimer le chat pour le currentUser
     async function deleteChat(chatId) {
       await privateChatStore.deletePrivateChat(currentUserId, chatId)
     }
