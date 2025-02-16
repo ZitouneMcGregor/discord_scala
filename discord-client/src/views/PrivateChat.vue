@@ -1,67 +1,160 @@
 <template>
-    <div class="chat-container">
-      <h2>Conversation avec {{ friendUsername }}</h2>
-      <div class="messages">
-        <p>📩 Affichage des messages privés ici...</p>
-      </div>
-  
-      <div class="message-input">
-        <input v-model="newMessage" placeholder="Écrire un message..." />
-        <button @click="sendMessage">Envoyer</button>
+  <div class="private-chat-container">
+    <h2>Vos chats privés</h2>
+
+    <!-- Liste des chats existants -->
+    <div v-if="privateChatStore.privateChats.length > 0" class="chat-list">
+      <div
+        v-for="chat in privateChatStore.privateChats"
+        :key="chat.id"
+        class="chat-item"
+      >
+        <!-- Par exemple, on affiche l'id ou user2, etc. -->
+        <p>Chat #{{ chat.id }} avec user {{ otherUserId(chat) }}</p>
+        <!-- Bouton pour “supprimer” ce chat côté user -->
+        <button class="btn-danger" @click="deleteChat(chat.id)">
+          Supprimer
+        </button>
       </div>
     </div>
-  </template>
-  
-  <script setup>
-  import { ref, computed } from 'vue';
-  import { useRoute } from 'vue-router';
-  
-  const route = useRoute();
-  const friendId = computed(() => route.params.friendId);
-  const friendUsername = computed(() => `Utilisateur ${friendId.value}`);
-  const newMessage = ref("");
-  
-  const sendMessage = () => {
-    if (newMessage.value.trim()) {
-      console.log("Message privé envoyé:", newMessage.value);
-      newMessage.value = "";
+    <div v-else>
+      <p>Aucun chat privé trouvé.</p>
+    </div>
+
+    <hr />
+
+    <!-- Formulaire pour créer un nouveau chat privé -->
+    <div class="create-chat-section">
+      <h3>Créer un nouveau chat privé</h3>
+      <div>
+        <label>Entrez l'ID d'un utilisateur existant :</label>
+        <input v-model="otherUserIdInput" placeholder="ID de l'autre user" />
+      </div>
+      <button class="btn-primary" @click="createChat">
+        Créer le chat
+      </button>
+    </div>
+  </div>
+</template>
+
+<script>
+import { onMounted, ref } from 'vue'
+import { useAuthStore } from '../store/auth';
+import { usePrivateChatStore } from '../store/privateChats';
+
+export default {
+  setup() {
+    const authStore = useAuthStore()
+    const privateChatStore = usePrivateChatStore()
+
+    // userId actuel
+    const currentUserId = authStore.user.id  // ou user?.id
+
+    // Champ pour saisir l'ID de l’autre user
+    const otherUserIdInput = ref('')
+
+    // Au montage, on charge la liste des private chats
+    onMounted(async () => {
+      await privateChatStore.fetchPrivateChats(currentUserId)
+    })
+
+    // Méthode pour trouver l’autre user du chat
+    // (si user_id_1 = currentUserId, alors l’autre est user_id_2, etc.)
+    function otherUserId(chat) {
+      if (chat.user_id_1 === currentUserId) {
+        return chat.user_id_2
+      } else {
+        return chat.user_id_1
+      }
     }
-  };
-  </script>
-  
-  <style scoped>
-  .chat-container {
-    background: #40444b;
-    padding: 20px;
-    flex: 1;
-    color: white;
+
+    // Créer un chat avec l’utilisateur otherUserIdInput
+    async function createChat() {
+      const otherId = parseInt(otherUserIdInput.value, 10)
+      if (!otherId) return
+
+      const success = await privateChatStore.createPrivateChat(
+        currentUserId,
+        otherId
+      )
+      if (success) {
+        otherUserIdInput.value = ''
+      } else {
+        alert('Erreur lors de la création du chat privé')
+      }
+    }
+
+    // Supprimer le chat pour le currentUser
+    async function deleteChat(chatId) {
+      await privateChatStore.deletePrivateChat(currentUserId, chatId)
+    }
+
+    return {
+      authStore,
+      privateChatStore,
+      currentUserId,
+      otherUserIdInput,
+      otherUserId,
+      createChat,
+      deleteChat
+    }
   }
-  
-  .messages {
-    height: 400px;
-    overflow-y: auto;
-  }
-  
-  .message-input {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-  }
-  
-  input {
-    flex: 1;
-    padding: 10px;
-    border-radius: 5px;
-    border: none;
-  }
-  
-  button {
-    background: #5865f2;
-    border: none;
-    padding: 10px;
-    color: white;
-    cursor: pointer;
-    border-radius: 5px;
-  }
-  </style>
-  
+}
+</script>
+
+<style scoped>
+.private-chat-container {
+  color: #dcddde;
+  background-color: #36393f;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-item {
+  background-color: #2f3136;
+  padding: 10px;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.create-chat-section {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-primary {
+  background-color: #5865F2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.btn-primary:hover {
+  background-color: #4752c4;
+}
+
+.btn-danger {
+  background-color: #f04747;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.btn-danger:hover {
+  background-color: #ce3c3c;
+}
+</style>

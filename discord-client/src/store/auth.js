@@ -41,9 +41,9 @@ export const useAuthStore = defineStore('auth', {
                 return false;
             }
         },
-        async updateUser(userId, { newUsername, newPassword }) {
+        async updateUser(userName, { newUsername, newPassword }) {
             try {
-              const response = await axios.put(`http://localhost:8080/users/${userId}`, {
+              const response = await axios.put(`http://localhost:8080/users/${userName}`, {
                 username: newUsername,
                 password: newPassword
               });
