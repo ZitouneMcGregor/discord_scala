@@ -1,6 +1,8 @@
 lazy val pekkoHttpVersion = "1.1.0"
 lazy val pekkoVersion     = "1.1.2"
 
+scalacOptions ++= Seq("-deprecation", "-unchecked", "-feature")
+
 fork := true
 
 lazy val root = (project in file(".")).

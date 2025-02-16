@@ -8,13 +8,18 @@ import models.User
 import java.sql.ResultSet
 import scala.collection.mutable.ListBuffer
 import models.Server
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 
 
 
 object UserServerDAO{
 
-    def insertUserServer(userServer: UserServer): Boolean= {
+    given ExecutionContext = ExecutionContext.global
+
+
+    def insertUserServer(userServer: UserServer): Future[Boolean]= Future{
         val connection = DatabaseConfig.getConnection
         val query = "INSERT INTO SERVER_USER (user_id, server_id) VALUES (?, ?)"
 
@@ -42,7 +47,7 @@ object UserServerDAO{
         }
         }
         
-    def deleteUserServer(userServer: UserServer): Boolean = {
+    def deleteUserServer(userServer: UserServer): Future[Boolean] =Future {
         val connection = DatabaseConfig.getConnection
         val query = "DELETE FROM SERVER_USER WHERE user_id = ? AND server_id = ?"
 
@@ -69,7 +74,7 @@ object UserServerDAO{
         }
         }
 
-    def getAllUserFromServer(server_id: Int): List[User] = {
+    def getAllUserFromServer(server_id: Int): Future[List[User]] = Future{
         val connection = DatabaseConfig.getConnection
         val query = "SELECT u.* FROM USER u, SERVER_USER su WHERE u.id = su.user_id AND su.server_id = ?;"
         val users = ListBuffer[User]()
@@ -97,7 +102,7 @@ object UserServerDAO{
         users.toList
   }
 
-    def getAllServerFromUser(user_id: Int): List[Server] = {
+    def getAllServerFromUser(user_id: Int): Future[List[Server]] = Future{
     val connection = DatabaseConfig.getConnection
     val query = "SELECT s.* FROM SERVER s, SERVER_USER su WHERE s.id = su.server_id AND su.user_id = ?;"
     val server = ListBuffer[Server]()

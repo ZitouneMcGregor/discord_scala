@@ -6,9 +6,13 @@ import scala.collection.mutable.ListBuffer
 import models.User
 import models.PrivateChat
 import utils.DatabaseConfig
-
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 object PrivateChatDAO {
-  def createPrivateChat(chat: PrivateChat): Boolean = {
+
+  given ExecutionContext = ExecutionContext.global
+
+  def createPrivateChat(chat: PrivateChat): Future[Boolean] = { Future{
     val connection = DatabaseConfig.getConnection
     val query = "INSERT INTO PRIVATE_CHAT (user_id_1, user_id_2) VALUES (?, ?)"
     
@@ -26,9 +30,10 @@ object PrivateChatDAO {
     } finally {
       connection.close()
     }
-  }
+}
+}
 
-    def getAllPrivateChats(userId: Int): List[PrivateChat] = {
+    def getAllPrivateChats(userId: Int): Future[List[PrivateChat]] = { Future{
         val connection = DatabaseConfig.getConnection
         val query = """SELECT * 
             FROM PRIVATE_CHAT
@@ -63,8 +68,9 @@ object PrivateChatDAO {
 
         chats.toList
     }
+}
 
-    def deletePrivateChatForUser(userId: Int, chatId: Int): Boolean = {
+    def deletePrivateChatForUser(userId: Int, chatId: Int): Future[Boolean] = { Future{
         val connection = DatabaseConfig.getConnection
         val query ="""UPDATE PRIVATE_CHAT 
             SET delete_user_1 = CASE WHEN user_id_1 = ? THEN true ELSE delete_user_1 END,
@@ -88,4 +94,4 @@ object PrivateChatDAO {
         }
     }
 }
-
+}

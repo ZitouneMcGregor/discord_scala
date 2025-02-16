@@ -6,12 +6,17 @@ import Models.Room
 import utils.DatabaseConfig
 import java.sql.PreparedStatement
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
 
 
 
 object RoomDAO{
 
-    def insertRoom(room: Room): Boolean = {
+    given ExecutionContext = ExecutionContext.global
+
+    def insertRoom(room: Room): Future[Boolean] = { Future{
         val connection = DatabaseConfig.getConnection
         val query = "INSERT INTO ROOM (name, id_server) VALUES (?, ?)"
     
@@ -39,8 +44,9 @@ object RoomDAO{
       connection.close()
     }
     }
+}
 
-    def updateRoom(room: Room): Boolean = {
+    def updateRoom(room: Room): Future[Boolean] = { Future{
 
         val connection = DatabaseConfig.getConnection
         val query = "UPDATE ROOM SET NAME = ? WHERE id = ?"
@@ -68,8 +74,9 @@ object RoomDAO{
       connection.close()
     }
     }
+}
 
-    def deleteRoom(room: Room): Boolean = {
+    def deleteRoom(room: Room): Future[Boolean] = { Future{
         val connection = DatabaseConfig.getConnection
         val query = "DELETE FROM ROOM WHERE id = ?"
 
@@ -96,9 +103,9 @@ object RoomDAO{
             connection.close()
         }
         }
+    }
 
-
-    def getAllRoom(id_server: Int): List[Room] = {
+    def getAllRoom(id_server: Int): Future[List[Room]] = { Future{
         val connection = DatabaseConfig.getConnection
         val query = "SELECT * FROM ROOM WHERE id_server = ?" 
         val rooms = ListBuffer[Room]()
@@ -125,4 +132,4 @@ object RoomDAO{
         rooms.toList
   }
 }
-
+}
