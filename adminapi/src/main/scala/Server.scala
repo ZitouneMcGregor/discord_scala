@@ -26,8 +26,9 @@ object Server extends App {
   val config = ConfigFactory.load()
   val routes = UserRoutes.route ~ PrivateChatRoutes.route ~ UserServerRoutes.route ~ ServerRoutes.route ~ RoomRoutes.route
 
-  val bindingFuture = Http().newServerAt("localhost", 8080).bind(routes)
 
-  println("🚀 Server running at http://localhost:8080/")
+  val bindingFuture = Http().newServerAt("0.0.0.0", 8080).bind(routes)
+
+  println("🚀 Server running at http://0.0.0.0:8080/")
   
 }

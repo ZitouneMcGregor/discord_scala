@@ -5,6 +5,7 @@ scalacOptions ++= Seq("-deprecation", "-unchecked", "-feature")
 
 fork := true
 
+
 lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
@@ -26,6 +27,7 @@ lazy val root = (project in file(".")).
       "org.apache.pekko" %% "pekko-http-cors" % "1.0.1",
       "com.zaxxer" % "HikariCP" % "5.0.1",
       "mysql" % "mysql-connector-java" % "8.0.33",
+      
 
     )
   )
