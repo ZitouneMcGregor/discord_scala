@@ -27,4 +27,4 @@ Technologies Utilisées
     Pekko HTTP (pour l'API REST)
     Futures (pour la gestion asynchrone)
     HikariCP (gestion du pool de connexions)
-    MySQL (ou autre SGBD pour la base de données admin)
+   
