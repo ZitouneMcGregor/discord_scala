@@ -46,10 +46,11 @@ object ServerRoutes extends ServerJsonFormats {
 
               
             }
-          } ~
-            get {
-            complete(ServerDAO.getAllServer)
           }
+        } ~
+          get {
+            complete(ServerDAO.getAllServer)
+        }
         
         } ~
           path(IntNumber) { id =>
@@ -95,12 +96,12 @@ object ServerRoutes extends ServerJsonFormats {
           }
         }
       }~
-      path("users" / IntNumber / "servers") { user_id =>
-        get {
-          complete(UserServerDAO.getAllServerFromUser(user_id ))
+        path("users" / IntNumber / "servers") { user_id =>
+          get {
+            complete(UserServerDAO.getAllServerFromUser(user_id ))
+          }
+
         }
-
+      }
     }
-  }
-}
-
+  

@@ -24,7 +24,6 @@ export const useMessageStore = defineStore('messages', {
           content
         });
         if (response.status === 201) {
-          // On recharge les messages pour voir le nouveau
           this.fetchMessages(serverId, roomId);
         }
       } catch (error) {

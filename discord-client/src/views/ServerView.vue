@@ -106,30 +106,22 @@ export default {
     const updatedServerImage = ref('');
 
     onMounted(async () => {
-      // Charger la liste des rooms du serveur
       if (serverId) {
         await roomStore.fetchRooms(serverId);
       }
-      // Optionnel : charger les infos du serveur pour pré-remplir updatedServerName / updatedServerImage
-      // ex: let srv = await serverStore.fetchServerById(serverId);
-      // updatedServerName.value = srv.name;
-      // updatedServerImage.value = srv.image;
     });
 
-    // Sélection d'une room : pas de navigation, on reste sur la même page
     function selectRoom(room) {
       selectedRoom.value = room;
-      editRoomName.value = room.name; // on pré-remplit le champ
+      editRoomName.value = room.name;
     }
 
-    // Ajouter une room
     async function addRoom() {
       if (!newRoomName.value.trim()) return;
       await roomStore.addRoom(serverId, newRoomName.value.trim());
       newRoomName.value = '';
     }
 
-    // Mettre à jour la room sélectionnée
     async function updateSelectedRoom() {
       if (!selectedRoom.value) return;
       await roomStore.updateRoom({
@@ -137,29 +129,22 @@ export default {
         roomId: selectedRoom.value.id,
         newName: editRoomName.value.trim()
       });
-      // On met à jour localement
       selectedRoom.value.name = editRoomName.value.trim();
     }
 
-    // Supprimer la room sélectionnée
     async function deleteSelectedRoom() {
       if (!selectedRoom.value) return;
       await roomStore.deleteRoom(serverId, selectedRoom.value.id);
-      // On re-fetch la liste pour la retirer
       await roomStore.fetchRooms(serverId);
-      // On désélectionne
       selectedRoom.value = null;
       editRoomName.value = '';
     }
 
-    // Quitter le serveur
     async function leaveCurrentServer() {
       await serverStore.leaveServer(authStore.user.id, Number(serverId));
-      // redirection par ex.
       router.push('/home');
     }
 
-    // Mettre à jour le serveur (nom, image)
     async function updateServerInfo() {
       if (!updatedServerName.value.trim() && !updatedServerImage.value.trim()) {
         return;
@@ -169,21 +154,17 @@ export default {
         name: updatedServerName.value.trim(),
         image: updatedServerImage.value.trim()
       });
-      // Optionnel : rafraîchir, vider les champs, etc.
     }
 
     return {
       serverId,
-      // Room
       selectedRoom,
       newRoomName,
       editRoomName,
 
-      // Server
       updatedServerName,
       updatedServerImage,
 
-      // Méthodes
       selectRoom,
       addRoom,
       updateSelectedRoom,
@@ -191,7 +172,6 @@ export default {
       leaveCurrentServer,
       updateServerInfo,
 
-      // Stores
       authStore,
       serverStore,
       roomStore
@@ -206,7 +186,6 @@ export default {
   height: 100%;
 }
 
-/* Colonne de gauche */
 .left-panel {
   width: 250px;
   background-color: #2f3136;
@@ -214,7 +193,6 @@ export default {
   overflow-y: auto;
 }
 
-/* Liste des rooms */
 .left-panel ul {
   list-style: none;
   margin: 0;
@@ -235,14 +213,12 @@ export default {
   background-color: #5865F2;
 }
 
-/* Ajouter une room */
 .add-room {
   display: flex;
   margin-top: 10px;
   gap: 5px;
 }
 
-/* Boutons */
 .btn-primary {
   background-color: #5865F2;
   color: #fff;
@@ -268,7 +244,6 @@ export default {
   background-color: #ce3c3c;
 }
 
-/* Formulaire update server */
 .update-server-section {
   margin-top: 20px;
   display: flex;

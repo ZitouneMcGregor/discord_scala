@@ -62,8 +62,9 @@ object RoomRoutes extends RoomJsonFormats{
                  
                 case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
 
+                }
             }
-        } ~
+            } ~
             delete{
             entity(as[Room]){ room =>
                 val roomWithIdServer = room.copy(id_server = Some(id_server))
@@ -75,17 +76,14 @@ object RoomRoutes extends RoomJsonFormats{
 
                  case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
 
-
+                }
             }
-        } ~
+            } ~
             get{
             
             complete(RoomDAO.getAllRoom(id_server))
-        }
-    
-} 
-        }
-
-    }
+            }
         }
     }
+}
+}

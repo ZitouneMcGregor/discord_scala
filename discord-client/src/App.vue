@@ -1,10 +1,7 @@
-<!-- src/App.vue -->
 <template>
   <div id="app">
-    <!-- Sidebar visible si on n'est PAS sur la page de login -->
     <Sidebar v-if="currentRouteName !== 'Login'" />
 
-    <!-- Le contenu principal -->
     <div class="main-content">
       <router-view :key="$route.fullPath" />
     </div>
