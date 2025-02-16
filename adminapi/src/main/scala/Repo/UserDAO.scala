@@ -5,9 +5,14 @@ import java.sql.ResultSet
 import scala.collection.mutable.ListBuffer
 import models.User
 import utils.DatabaseConfig
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 object UserDAO {
-  def insertUser(user: User): Boolean = {
+
+  given ExecutionContext = ExecutionContext.global
+
+  def insertUser(user: User): Future[Boolean] = Future {
     val connection = DatabaseConfig.getConnection
     val query = "INSERT INTO USER (username, password) VALUES (?, ?)"
 
@@ -29,7 +34,7 @@ object UserDAO {
     }
   }
 
-  def getAllUsers: List[User] = {
+  def getAllUsers: Future[List[User]] = Future{
     val connection = DatabaseConfig.getConnection
     val query = "SELECT * FROM USER"
     val users = ListBuffer[User]()
@@ -56,7 +61,7 @@ object UserDAO {
     users.toList
   }
 
-  def getUserByUsername(username: String): Option[User] = {
+  def getUserByUsername(username: String): Future[Option[User]] = Future{
   val connection = DatabaseConfig.getConnection
   val query = "SELECT * FROM USER WHERE username = ?"
   var user: Option[User] = None
@@ -84,7 +89,7 @@ object UserDAO {
   user
 }
 
-  def deleteUser(username: String): Boolean = {
+  def deleteUser(username: String): Future[Boolean] = Future{
   val connection = DatabaseConfig.getConnection
   val query = "UPDATE USER SET deleted = true WHERE username = ? AND deleted = false"
   var updated = false
@@ -105,7 +110,7 @@ object UserDAO {
   updated
   }
 
-  def updateUser(username: String, newUsername: String, newPassword: String): Boolean = {
+  def updateUser(username: String, newUsername: String, newPassword: String): Future[Boolean]= Future {
     val connection = DatabaseConfig.getConnection
     val query = "UPDATE USER SET username = ?, password = ? WHERE username = ?"
     var updated = false

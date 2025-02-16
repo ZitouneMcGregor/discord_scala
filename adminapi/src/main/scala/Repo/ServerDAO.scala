@@ -5,9 +5,14 @@ import java.sql.ResultSet
 import scala.collection.mutable.ListBuffer
 import models.Server
 import utils.DatabaseConfig
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 object ServerDAO {
-  def insertServer(server: Server): Boolean = {
+
+  given ExecutionContext = ExecutionContext.global
+
+  def insertServer(server: Server): Future[Boolean] = Future{
     val connection = DatabaseConfig.getConnection
     val query = "INSERT INTO SERVER (name, img) VALUES (?, ?)"
     
@@ -27,7 +32,7 @@ object ServerDAO {
     }
   }
 
-  def getAllServer: List[Server] = {
+  def getAllServer: Future[List[Server]] = Future {
     val connection = DatabaseConfig.getConnection
     val query = "SELECT * FROM SERVER"
     val server = ListBuffer[Server]()
@@ -53,7 +58,7 @@ object ServerDAO {
     server.toList
   }
 
-  def getServerById(id: Int): Option[Server] = {
+  def getServerById(id: Int): Future[Option[Server]] = Future {
     val connection = DatabaseConfig.getConnection
     val query = "SELECT * FROM SERVER WHERE id = ?"
     
@@ -80,7 +85,7 @@ object ServerDAO {
     }
   }
 
-  def updateServer(server: Server): Boolean = {
+  def updateServer(server: Server): Future[Boolean] = Future {
     val connection = DatabaseConfig.getConnection
     val query = "UPDATE SERVER SET name = ?, img = ? WHERE id = ?"
     
@@ -108,7 +113,7 @@ object ServerDAO {
     }
   }
 
-  def deleteServer(id: Int): Boolean = {
+  def deleteServer(id: Int): Future[Boolean] = Future{
     val connection = DatabaseConfig.getConnection
     val query = "DELETE FROM SERVER WHERE id = ?"
     
@@ -127,7 +132,7 @@ object ServerDAO {
       }
   }
 
-  def getServerByName(name: String): Option[Server] = {
+  def getServerByName(name: String): Future[Option[Server]] = Future {
     val connection = DatabaseConfig.getConnection
     val query = "SELECT * FROM SERVER WHERE name = ?"
     

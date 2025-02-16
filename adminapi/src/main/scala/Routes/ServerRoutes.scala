@@ -3,23 +3,26 @@ package routes
 import models.Server
 import dao.ServerDAO
 
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.server.Route
-import spray.json._
-import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import org.apache.pekko.http.cors.scaladsl.CorsDirectives._
+import spray.json.*
+import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport.*
+import org.apache.pekko.http.cors.scaladsl.CorsDirectives.*
 import org.apache.pekko.http.cors.scaladsl.settings.CorsSettings
 import org.apache.pekko.http.cors.scaladsl.model.HttpOriginMatcher
+import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport.*
 import scala.collection.immutable.Seq
-import org.apache.pekko.http.scaladsl.model.HttpMethods._
+import org.apache.pekko.http.scaladsl.model.HttpMethods.*
 import org.apache.pekko.http.cors.scaladsl.model.HttpHeaderRange
 import Repo.UserServerDAO
+import scala.util.{Success, Failure}
+
 
 
 trait ServerJsonFormats extends DefaultJsonProtocol {
-  implicit val serverFormat: RootJsonFormat[Server] = jsonFormat3(Server.apply)
-  implicit val serverListFormat: RootJsonFormat[List[Server]] = listFormat(serverFormat)
+  given serverFormat: RootJsonFormat[Server] = jsonFormat3(Server.apply)
+  given serverListFormat: RootJsonFormat[List[Server]] = listFormat(serverFormat)
 }
 object ServerRoutes extends ServerJsonFormats {
 
@@ -34,51 +37,60 @@ object ServerRoutes extends ServerJsonFormats {
         pathEnd {
           post {
             entity(as[Server]) { server =>
-              if (ServerDAO.insertServer(server)) {
-                complete(StatusCodes.Created -> "Server inserted successfully")
-              } else {
-                complete(StatusCodes.InternalServerError -> "Error inserting Server")
-              }
+              onComplete(ServerDAO.insertServer(server)) {
+                case Success(true) => complete(StatusCodes.Created -> "Server inserted successfully")
+              
+                case Success(false) => complete(StatusCodes.InternalServerError -> "Error inserting Server in the db")
+
+                case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
+
+              
             }
           } ~
-          get {
+            get {
             complete(ServerDAO.getAllServer)
           }
         
         } ~
-        path(IntNumber) { id =>
+          path(IntNumber) { id =>
           put {
             entity(as[Server]) { server =>
               val updatedServer = server.copy(id = Some(id)) // Update the server with the id from the URL
-              if (ServerDAO.updateServer(updatedServer)) {
-                complete(StatusCodes.OK -> "Server updated successfully")
-              } else {
-                complete(StatusCodes.InternalServerError -> "Error updating Server")
-              }
+              onComplete(ServerDAO.updateServer(updatedServer)) {
+               case Success(true) => complete(StatusCodes.OK -> "Server updated successfully")
+              
+               case Success(false) =>  complete(StatusCodes.InternalServerError -> "Error updating Server in the db")
+              
+               case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
+
             }
           } ~
-          delete {
-            if (ServerDAO.deleteServer(id)) {
-              complete(StatusCodes.OK -> s"Server with ID $id deleted successfully")
-            } else {
-              complete(StatusCodes.NotFound -> s"Server with ID $id not found")
+            delete {
+            onComplete(ServerDAO.deleteServer(id)) {
+             case Success(true) => complete(StatusCodes.OK -> s"Server with ID $id deleted successfully")
+            
+             case Success(false) =>  complete(StatusCodes.NotFound -> s"Server with ID $id not found")
+            
+             case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
             }
           } ~
-          get {
-            ServerDAO.getServerById(id) match {
-          case Some(server) =>
-            complete(server) // Successfully found server, return it
-          case None =>
-            complete(StatusCodes.NotFound -> s"Server with ID $id not found") // Server not found
+            get {
+            onComplete(ServerDAO.getServerById(id))  {
+          case Success(Some(server)) => complete(server) 
+          case Success(None) =>complete(StatusCodes.NotFound -> s"Server with ID $id not found") 
+          case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
+
         }
       }
         } ~
-        path("search" / Segment) { name => // La requete doit être server/search/nom_du_server
+          path("search" / Segment) { name => 
           get {
-            val server = ServerDAO.getServerByName(name)
-            server match {
-              case Some(s) => complete(s)
-              case None    => complete(StatusCodes.NotFound -> s"Server with name $name not found")
+            onComplete(ServerDAO.getServerByName(name)){
+              case Success(Some(s)) => complete(s)
+              case Success(None)    => complete(StatusCodes.NotFound -> s"Server with name $name not found")
+              case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
+
+            }
             }
           }
         }
@@ -91,3 +103,4 @@ object ServerRoutes extends ServerJsonFormats {
     }
   }
 }
+

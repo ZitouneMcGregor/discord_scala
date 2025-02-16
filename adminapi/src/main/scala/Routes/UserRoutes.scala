@@ -2,11 +2,11 @@ package routes
 
 import models.User
 import dao.UserDAO
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.server.Route
-import spray.json._
-import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import spray.json.*
+import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport.*
 import Repo.UserServerDAO
 import org.apache.pekko.http.cors.scaladsl.CorsDirectives._
 import org.apache.pekko.http.cors.scaladsl.settings.CorsSettings
@@ -15,9 +15,16 @@ import org.apache.pekko.http.scaladsl.model.HttpMethods._
 import org.apache.pekko.http.cors.scaladsl.model.HttpHeaderRange
 import scala.collection.immutable.Seq
 
+import org.apache.pekko.actor.*
+import org.apache.pekko.stream.scaladsl.*
+import org.apache.pekko.http.scaladsl.*
+import org.apache.pekko.http.cors.scaladsl.CorsDirectives.*
+import scala.util.{Success, Failure}
+
+
 trait UserJsonFormats extends DefaultJsonProtocol {
-  implicit val userFormat: RootJsonFormat[User] = jsonFormat4(User.apply)
-  implicit val userListFormat: RootJsonFormat[List[User]] = listFormat(userFormat)
+  given userFormat: RootJsonFormat[User] = jsonFormat4(User.apply)
+  given userListFormat: RootJsonFormat[List[User]] = listFormat(userFormat)
 }
 
 object UserRoutes extends UserJsonFormats {
@@ -32,10 +39,13 @@ object UserRoutes extends UserJsonFormats {
       pathEnd {
         post {
           entity(as[User]) { user =>
-            if (UserDAO.insertUser(user)) {
-              complete(StatusCodes.Created -> "User inserted successfully")
-            } else {
-              complete(StatusCodes.InternalServerError -> "Error inserting user")
+            onComplete(UserDAO.insertUser(user)) {
+              case Success(true) => complete(StatusCodes.Created -> "User inserted successfully")
+            
+             case Success(false) => complete(StatusCodes.InternalServerError -> "Error inserting user")
+
+            case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
+
             }
           }
         } ~
@@ -45,24 +55,30 @@ object UserRoutes extends UserJsonFormats {
       } ~
       path(Segment) { username =>
         get {
-          UserDAO.getUserByUsername(username) match {
-            case Some(user) => complete(StatusCodes.OK, user)
-            case None       => complete(StatusCodes.NotFound -> s"User with username $username not found")
+
+          onComplete(UserDAO.getUserByUsername(username))  {
+            case Success(Some(user)) => complete(StatusCodes.OK, user)
+            case Success(None) => complete(StatusCodes.NotFound, s"User with username $username not found")
+            case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
           }
         } ~
         delete {
-          if (UserDAO.deleteUser(username)) {
-            complete(StatusCodes.OK -> s"User $username deleted successfully")
-          } else {
-            complete(StatusCodes.NotFound -> s"User $username not found or already deleted")
+          onComplete(UserDAO.deleteUser(username)) {
+            case Success(true) =>complete(StatusCodes.OK -> s"User $username deleted successfully")
+            case Success(false) => complete(StatusCodes.NotFound -> s"User $username not found or already deleted")
+           case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
+
           }
         } ~
         put {
           entity(as[User]) { user =>
-            if (UserDAO.updateUser(username, user.username, user.password)) {
-              complete(StatusCodes.OK -> s"User $username updated successfully")
-            } else {
-              complete(StatusCodes.NotFound -> s"User $username not found")
+            onComplete(UserDAO.updateUser(username, user.username, user.password)) {
+              case Success(true) => complete(StatusCodes.OK -> s"User $username updated successfully")
+          
+              case Success(false) =>complete(StatusCodes.NotFound -> s"User $username not found")
+
+              case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
+
             }
           }
         }
