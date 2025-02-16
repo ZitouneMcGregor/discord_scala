@@ -1,25 +1,16 @@
 <template>
-  <div id="app">
-    <router-view />
+  <div class="app-container">
+    <router-view></router-view>
   </div>
 </template>
 
-<script setup>
-</script>
-
 <style>
-/* Styles globaux */
+/* Style global */
 body {
   margin: 0;
   font-family: 'Arial', sans-serif;
-  background-color: #2c2f33;
+  background: #23272a;
   color: white;
-}
-
-#app {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 100vh;
+  width: 100%;
 }
 </style>
