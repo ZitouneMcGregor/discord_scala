@@ -1,4 +1,4 @@
-bt project compiled with Scala 3
+sbt project compiled with Scala 3
 Usage
 
 Ce projet implémente l'API REST de la partie admin de notre application. L'API utilise Pekko HTTP et les Futures pour la gestion asynchrone, et implémente les opérations CRUD (Create, Read, Update, Delete) sur la base de données admin.
