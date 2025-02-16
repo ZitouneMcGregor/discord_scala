@@ -1,8 +1,30 @@
-## sbt project compiled with Scala 3
+bt project compiled with Scala 3
+Usage
 
-### Usage
+Ce projet implémente l'API REST de la partie admin de notre application. L'API utilise Pekko HTTP et les Futures pour la gestion asynchrone, et implémente les opérations CRUD (Create, Read, Update, Delete) sur la base de données admin.
+Prérequis
 
-This is a normal sbt project. You can compile code with `sbt compile`, run it with `sbt run`, and `sbt console` will start a Scala 3 REPL.
+    Java 11 ou supérieur
+    sbt (Scala Build Tool) installé
+    Scala 3
 
-For more information on the sbt-dotty plugin, see the
-[scala3-example-project](https://github.com/scala/scala3-example-project/blob/main/README.md).
+Compilation et Exécution
+
+Pour compiler le projet :
+
+sbt compile
+
+Pour exécuter l'application :
+
+sbt run
+
+L'API sera exposée sur le port 8080 (modifiable via la configuration ou une variable d'environnement).
+
+Technologies Utilisées
+
+    Scala 3
+    sbt
+    Pekko HTTP (pour l'API REST)
+    Futures (pour la gestion asynchrone)
+    HikariCP (gestion du pool de connexions)
+    MySQL (ou autre SGBD pour la base de données admin)
