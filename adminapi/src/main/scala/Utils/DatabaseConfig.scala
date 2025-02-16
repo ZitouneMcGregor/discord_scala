@@ -5,7 +5,11 @@ import java.sql.Connection
 
 object DatabaseConfig {
   private val hikariConfig = new HikariConfig()
-  hikariConfig.setJdbcUrl("jdbc:mysql://localhost:3036/AdminDiscord")
+
+  val jdbcurl = sys.env.getOrElse("JDBC_URL","jdbc:mysql://localhost:3336/AdminDiscord" )
+
+
+  hikariConfig.setJdbcUrl(jdbcurl)
   hikariConfig.setUsername("root")
   hikariConfig.setPassword("1234567aA*")
   hikariConfig.setDriverClassName("com.mysql.cj.jdbc.Driver")
