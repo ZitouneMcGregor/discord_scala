@@ -8,7 +8,16 @@ import Repo.RoomDAO
 import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport.*
 import org.apache.pekko.http.scaladsl.model.StatusCodes
+
+import org.apache.pekko.http.cors.scaladsl.CorsDirectives._
+import org.apache.pekko.http.cors.scaladsl.settings.CorsSettings
+import org.apache.pekko.http.cors.scaladsl.model.HttpOriginMatcher
+import org.apache.pekko.http.scaladsl.model.HttpMethods._
+import org.apache.pekko.http.cors.scaladsl.model.HttpHeaderRange
+import scala.collection.immutable.Seq
+
 import scala.util.{Success, Failure}
+
 
 
 
@@ -19,7 +28,14 @@ trait RoomJsonFormats extends DefaultJsonProtocol{
 }
 
 object RoomRoutes extends RoomJsonFormats{
+
+    val corsSettings: CorsSettings = CorsSettings.defaultSettings
+    .withAllowedOrigins(HttpOriginMatcher.*)
+    .withAllowedMethods(Seq(GET, POST, PUT, DELETE, OPTIONS))
+    .withAllowedHeaders(HttpHeaderRange.*)
+
     val route: Route =
+        cors(corsSettings){
         pathPrefix("server" / IntNumber){ id_server =>
         path("rooms"){
             post{
@@ -69,6 +85,7 @@ object RoomRoutes extends RoomJsonFormats{
     
 } 
         }
+
     }
         }
     }

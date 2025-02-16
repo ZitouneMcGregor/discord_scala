@@ -8,6 +8,13 @@ import org.apache.pekko.http.scaladsl.server.Route
 import spray.json.*
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport.*
 import Repo.UserServerDAO
+import org.apache.pekko.http.cors.scaladsl.CorsDirectives._
+import org.apache.pekko.http.cors.scaladsl.settings.CorsSettings
+import org.apache.pekko.http.cors.scaladsl.model.HttpOriginMatcher
+import org.apache.pekko.http.scaladsl.model.HttpMethods._
+import org.apache.pekko.http.cors.scaladsl.model.HttpHeaderRange
+import scala.collection.immutable.Seq
+
 import org.apache.pekko.actor.*
 import org.apache.pekko.stream.scaladsl.*
 import org.apache.pekko.http.scaladsl.*
@@ -21,9 +28,15 @@ trait UserJsonFormats extends DefaultJsonProtocol {
 }
 
 object UserRoutes extends UserJsonFormats {
-  val route: Route =
-    cors() {
-      path("users") {
+
+  val corsSettings: CorsSettings = CorsSettings.defaultSettings
+    .withAllowedOrigins(HttpOriginMatcher.*)
+    .withAllowedMethods(Seq(GET, POST, PUT, DELETE, OPTIONS))
+    .withAllowedHeaders(HttpHeaderRange.*)
+
+  val route: Route = cors(corsSettings) {
+    pathPrefix("users") {
+      pathEnd {
         post {
           entity(as[User]) { user =>
             onComplete(UserDAO.insertUser(user)) {
@@ -40,13 +53,13 @@ object UserRoutes extends UserJsonFormats {
           complete(UserDAO.getAllUsers)
         }
       } ~
-      path("user" / Segment) { username =>
+      path(Segment) { username =>
         get {
+
           onComplete(UserDAO.getUserByUsername(username))  {
             case Success(Some(user)) => complete(StatusCodes.OK, user)
             case Success(None) => complete(StatusCodes.NotFound, s"User with username $username not found")
             case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
-
           }
         } ~
         delete {
@@ -69,11 +82,12 @@ object UserRoutes extends UserJsonFormats {
             }
           }
         }
-      } ~
-      path("server" / IntNumber / "users") { id_server =>
-        get {
-          complete(UserServerDAO.getAllUserFromServer(id_server))
-        }
+      }
+    } ~
+    pathPrefix("server" / IntNumber / "users") { id_server =>
+      get {
+        complete(UserServerDAO.getAllUserFromServer(id_server))
       }
     }
+  }
 }

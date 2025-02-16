@@ -10,6 +10,13 @@ import spray.json.*
 import Repo.UserServerDAO
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import dao.UserDAO
+import org.apache.pekko.http.cors.scaladsl.CorsDirectives._
+import org.apache.pekko.http.cors.scaladsl.settings.CorsSettings
+import org.apache.pekko.http.cors.scaladsl.model.HttpOriginMatcher
+import org.apache.pekko.http.scaladsl.model.HttpMethods._
+import org.apache.pekko.http.cors.scaladsl.model.HttpHeaderRange
+import scala.collection.immutable.Seq
+
 import scala.util.{Success, Failure}
 
 
@@ -19,9 +26,16 @@ trait UserServerJsonFormats extends DefaultJsonProtocol{
 
 object UserServerRoutes extends UserServerJsonFormats{
 
+    val corsSettings: CorsSettings = CorsSettings.defaultSettings
+    .withAllowedOrigins(HttpOriginMatcher.*)
+    .withAllowedMethods(Seq(GET, POST, PUT, DELETE, OPTIONS))
+    .withAllowedHeaders(HttpHeaderRange.*)
+
     val route: Route =
-                pathPrefix("server" / IntNumber){ id_server =>
-                pathPrefix("userServer"){
+        cors(corsSettings) {
+            pathPrefix("server" / IntNumber){ id_server =>
+                path("userServer"){
+
                     post{
                         entity(as[UserServer]) { userServer =>
                             val userServerWithIdServer = userServer.copy(server_id = Some(id_server))
@@ -75,6 +89,8 @@ object UserServerRoutes extends UserServerJsonFormats{
                     }
 
                 }
-        
+            }
+        }
+
 
             }
