@@ -14,5 +14,6 @@ Développement
 
 Pour lancer le serveur de développement exécutez :
 
-npm run dev
+    npm run dev
+
 
