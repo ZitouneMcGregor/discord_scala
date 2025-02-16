@@ -7,7 +7,7 @@ Pour lancer l'applis :
 
 docker-compose up --build
 
-rendez vous sur localhost : http://localhost:8080/ pouf accéder à l'application
+rendez vous sur localhost : http://localhost:8081/ pouf accéder à l'application
 
 Arrêter et Supprimer l'Application :
 docker-compose down -v
