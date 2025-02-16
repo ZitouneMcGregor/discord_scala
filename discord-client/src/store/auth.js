@@ -13,7 +13,7 @@ export const useAuthStore = defineStore('auth', {
     actions: {
         async login(username, password) {
             try {
-                const response = await axios.get(`http://localhost:8080/user/${username}`);
+                const response = await axios.get(`http://localhost:8080/users/${username}`);
                 if (response.data.password === password) {
                     this.user = response.data;
                     localStorage.setItem('user', JSON.stringify(response.data));
@@ -40,6 +40,24 @@ export const useAuthStore = defineStore('auth', {
                 console.error('Register error', error);
                 return false;
             }
-        }
+        },
+        async updateUser(userId, { newUsername, newPassword }) {
+            try {
+              const response = await axios.put(`http://localhost:8080/users/${userId}`, {
+                username: newUsername,
+                password: newPassword
+              });
+              if (response.status === 200) {
+                // Mettre à jour l'utilisateur localement si besoin
+                this.user.username = newUsername;
+                // (si le backend renvoie le user complet, tu peux réassigner `this.user = response.data;`)
+                localStorage.setItem('user', JSON.stringify(this.user));
+                return true;
+              }
+            } catch (error) {
+              console.error('Erreur updateUser', error);
+            }
+            return false;
+          }
     }
 });

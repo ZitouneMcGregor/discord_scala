@@ -1,0 +1,180 @@
+/* Exemple de style global */
+/* src/styles.css */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  background-color: #36393f; 
+  color: #dcddde;
+}
+
+#app {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+}
+
+.main-content {
+  flex: 1; /* occupe tout l’espace restant */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* cache éventuellement le scroll si besoin */
+}
+
+/* Barre verticale à gauche pour la liste des serveurs */
+.server-list {
+  width: 70px;
+  min-width: 70px;
+  background-color: #202225; /* Couleur sombre */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 10px;
+}
+
+/* Exemple d’icônes ou cercles pour les serveurs */
+.server-icon {
+  width: 50px;
+  height: 50px;
+  background-color: #2f3136;
+  border-radius: 50%;
+  margin-bottom: 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  color: #fff;
+  transition: background-color 0.2s;
+}
+.server-icon:hover {
+  background-color: #3e4042;
+}
+
+/* Liste des channels (rooms) du serveur sélectionné */
+.channel-list {
+  width: 200px;
+  min-width: 200px;
+  background-color: #2f3136; /* Couleur un peu plus claire */
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+/* Style de chaque room dans la liste */
+.channel-item {
+  padding: 5px 10px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.channel-item:hover {
+  background-color: #393c43;
+}
+
+/* La zone principale (chat) */
+.chat-container {
+  flex: 1; /* Occupe tout l'espace restant */
+  display: flex;
+  flex-direction: column;
+  background-color: #36393f;
+}
+
+/* En-tête éventuelle (nom du channel, etc.) */
+.chat-header {
+  height: 50px;
+  background-color: #2f3136;
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+  border-bottom: 1px solid #222326;
+  font-weight: bold;
+}
+
+/* Zone qui contient la liste des messages */
+.messages {
+  flex: 1; /* prend tout l'espace disponible */
+  overflow-y: auto; /* scroll si trop de messages */
+  padding: 10px;
+}
+
+/* Style d'un message */
+.message {
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+/* Nom de l'auteur */
+.message-author {
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+/* Contenu du message */
+.message-content {
+  white-space: pre-wrap;
+}
+
+/* Barre d'envoi de message en bas */
+.message-input {
+  display: flex;
+  border-top: 1px solid #222326;
+  padding: 10px;
+  background-color: #40444b;
+}
+
+.message-input input[type="text"] {
+  flex: 1;
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #303338;
+  color: #dcddde;
+  outline: none;
+}
+.message-input input[type="text"]::placeholder {
+  color: #aaa;
+}
+
+.message-input button {
+  margin-left: 10px;
+  padding: 8px 12px;
+  background-color: #5865F2;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+}
+.message-input button:hover {
+  background-color: #4752c4;
+}
+
+/* Exemple : style pour un bouton principal */
+.btn-primary {
+  background-color: #5865F2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.btn-primary:hover {
+  background-color: #4752c4;
+}
+
+/* Scrollbar personnalisée (optionnel) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background-color: #2f3136;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #202225;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #292b2f;
+}

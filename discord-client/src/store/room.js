@@ -1,3 +1,4 @@
+// store/rooms.js
 import { defineStore } from 'pinia';
 import axios from 'axios';
 
@@ -20,33 +21,44 @@ export const useRoomStore = defineStore('rooms', {
     async addRoom(serverId, roomName) {
       try {
         const response = await axios.post(`http://localhost:8080/server/${serverId}/rooms`, {
-          id: null, // ID auto-généré
-          id_server: serverId,
           name: roomName
         });
         if (response.status === 201) {
-          this.fetchRooms(serverId);
+          // Recharger la liste
+          await this.fetchRooms(serverId);
         }
       } catch (error) {
         console.error('Erreur lors de l\'ajout de la room', error);
       }
     },
 
+    // Méthode de mise à jour
+    async updateRoom({ serverId, roomId, newName }) {
+      try {
+        const response = await axios.put(`http://localhost:8080/server/${serverId}/rooms`, {
+          id: roomId,
+          name: newName
+        });
+        if (response.status === 200) {
+          console.log('Room mise à jour avec succès');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour de la room', error);
+      }
+    },
+
+    // Méthode de suppression
     async deleteRoom(serverId, roomId) {
       try {
         const response = await axios.delete(`http://localhost:8080/server/${serverId}/rooms`, {
-          data: { id: roomId, id_server: serverId }
+          data: { id: roomId }
         });
         if (response.status === 200) {
-          this.fetchRooms(serverId);
+          console.log('Room supprimée avec succès');
         }
       } catch (error) {
         console.error('Erreur lors de la suppression de la room', error);
       }
-    },
-
-    selectRoom(room) {
-      this.selectedRoom = room;
     }
   }
 });

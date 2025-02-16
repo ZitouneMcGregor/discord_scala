@@ -1,16 +1,21 @@
+<!-- src/App.vue -->
 <template>
-  <div class="app-container">
-    <router-view></router-view>
+  <div id="app">
+    <!-- Sidebar visible si on n'est PAS sur la page de login -->
+    <Sidebar v-if="currentRouteName !== 'Login'" />
+
+    <!-- Le contenu principal -->
+    <div class="main-content">
+      <router-view :key="$route.fullPath" />
+    </div>
   </div>
 </template>
 
-<style>
-/* Style global */
-body {
-  margin: 0;
-  font-family: 'Arial', sans-serif;
-  background: #23272a;
-  color: white;
-  width: 100%;
-}
-</style>
+<script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import Sidebar from './views/Sidebar.vue';
+
+const route = useRoute()
+const currentRouteName = computed(() => route.name)
+</script>
