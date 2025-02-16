@@ -25,7 +25,12 @@ object UserServerDAO{
 
         try{
             val statement: PreparedStatement = connection.prepareStatement(query)
-            statement.setInt(1, userServer.user_id)
+            userServer.user_id match{
+                case Some(value) => statement.setInt(1, value)
+                case None => 
+                    println("Error, server id is null") 
+                    false
+            }
             
 
             userServer.server_id match{
@@ -53,7 +58,12 @@ object UserServerDAO{
 
         try{
             val statement: PreparedStatement = connection.prepareStatement(query)
-            statement.setInt(1, userServer.user_id)
+            userServer.user_id match{
+                case Some(value) => statement.setInt(1, value)
+                case None => 
+                    println("Error, server id is null") 
+                    false
+            }
             userServer.server_id match{
                 case Some(value) => statement.setInt(2, value)
                 case None => 
@@ -117,6 +127,7 @@ object UserServerDAO{
                  Some(resultSet.getInt("id")),
                  resultSet.getString("name"),
                 resultSet.getString("img")
+
         )
       }
     } catch {
@@ -129,8 +140,62 @@ object UserServerDAO{
     server.toList
   }
 
+    def getUserServerByIds(user_id: Int,server_id: Int): Future[Option[UserServer]] = Future {
+    val connection = DatabaseConfig.getConnection
+    val query = "SELECT * FROM SERVER_USER WHERE user_id = ? AND server_id = ?"
+    
+    try {
+      val statement = connection.prepareStatement(query)
+      statement.setInt(1, user_id)
+      statement.setInt(2,server_id)
+      val resultSet = statement.executeQuery()
 
+      if (resultSet.next()) {
+        Some(UserServer(
+          Some(resultSet.getInt("id")),
+          Some(resultSet.getInt("user_id")),
+          Some(resultSet.getInt("server_id")),
+          Some(resultSet.getBoolean("admin"))
+        ))
+      } else {
+        None
+      }
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        None
+      } finally {
+        connection.close()
+      }
     }
+  
+      def updateAdminByIds(user_id: Int, server_id: Int, admin: Boolean): Future[Boolean]= Future {
+    val connection = DatabaseConfig.getConnection
+    val query = "UPDATE SERVER_USER SET admin = ?  WHERE user_id= ? AND server_id = ?"
+    var updated = false
+
+    try {
+      val statement = connection.prepareStatement(query)
+      statement.setInt(1, user_id)
+      statement.setInt(2,server_id)
+      statement.setBoolean(3, admin)
+      
+      val rowsUpdated = statement.executeUpdate()
+      updated = rowsUpdated > 0
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+    } finally {
+      connection.close()
+    }
+
+    updated
+  }
+
+
+
+}
+
 
 
         

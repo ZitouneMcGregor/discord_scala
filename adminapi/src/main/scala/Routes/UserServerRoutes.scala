@@ -14,14 +14,14 @@ import scala.util.{Success, Failure}
 
 
 trait UserServerJsonFormats extends DefaultJsonProtocol{
-    given userServerFormat:RootJsonFormat[UserServer] = jsonFormat3(UserServer.apply)
+    given userServerFormat:RootJsonFormat[UserServer] = jsonFormat4(UserServer.apply)
 }
 
 object UserServerRoutes extends UserServerJsonFormats{
 
     val route: Route =
                 pathPrefix("server" / IntNumber){ id_server =>
-                path("userServer"){
+                pathPrefix("userServer"){
                     post{
                         entity(as[UserServer]) { userServer =>
                             val userServerWithIdServer = userServer.copy(server_id = Some(id_server))
@@ -49,9 +49,32 @@ object UserServerRoutes extends UserServerJsonFormats{
 
                             }
                         }
-                    } 
+                    } ~
+                    path("user" / IntNumber){id_user =>
+                        get{
+                            complete(UserServerDAO.getUserServerByIds(id_user,id_server))
+                        }
+                    }
+                ~
+                        path("user"/ IntNumber / "admin" / IntNumber){ (id_user,admin) =>
+                            put{
+                                val adminBool = admin match {
+                                    case 1 => true
+                                    case 0 => false
+                                    case _ => throw new IllegalArgumentException("Invalid admin value")
+                                }
+
+                                onComplete(UserServerDAO.updateAdminByIds(id_user,id_server,adminBool)){
+                                    case Success(true) => complete(StatusCodes.OK -> "Admin status updated successfully")
+                                    case Success(false) => complete(StatusCodes.InternalServerError -> "Error while updating admin status in the db")
+                                    case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
+                                }
+                            }
+                        }
+
+                    }
 
                 }
-        }
+        
 
-    }
+            }
