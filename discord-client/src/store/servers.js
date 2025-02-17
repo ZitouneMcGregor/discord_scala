@@ -12,7 +12,7 @@ export const useServerStore = defineStore('servers', {
   actions: {
     async fetchAllServers() {
       try {
-        const response = await axios.get('http://localhost:8080/server');
+        const response = await axios.get('http://34.175.236.217:8080/server');
         this.allServers = response.data;
       } catch (error) {
         console.error('Erreur fetchAllServers', error);
@@ -21,7 +21,7 @@ export const useServerStore = defineStore('servers', {
 
     async fetchUserServers(userId) {
       try {
-        const response = await axios.get(`http://localhost:8080/users/${userId}/servers`);
+        const response = await axios.get(`http://34.175.236.217:8080/users/${userId}/servers`);
         this.userServers = response.data;
       } catch (error) {
         console.error('Erreur fetchUserServers', error);
@@ -41,7 +41,7 @@ export const useServerStore = defineStore('servers', {
 
     async createServer(serverName, serverImage) {
       try {
-        const response = await axios.post('http://localhost:8080/server', {
+        const response = await axios.post('http://34.175.236.217:8080/server', {
           name: serverName,
           img: serverImage
         });
@@ -58,7 +58,7 @@ export const useServerStore = defineStore('servers', {
     async joinServer(userId, serverId) {
       try {
         const response = await axios.post(
-          `http://localhost:8080/server/${serverId}/userServer`,
+          `http://34.175.236.217:8080/server/${serverId}/userServer`,
           {
             user_id: userId,
             server_id: serverId
@@ -78,7 +78,7 @@ export const useServerStore = defineStore('servers', {
 
     async leaveServer(userId, serverId) {
       try {
-        const response = await axios.delete(`http://localhost:8080/server/${serverId}/userServer`, {
+        const response = await axios.delete(`http://34.175.236.217:8080/server/${serverId}/userServer`, {
           data: { user_id: userId, server_id: serverId }
         });
         if (response.status === 200) {
@@ -91,7 +91,7 @@ export const useServerStore = defineStore('servers', {
 
     async updateServer(serverData) {
       try {
-        const response = await axios.put(`http://localhost:8080/server/${serverData.id}`, {
+        const response = await axios.put(`http://34.175.236.217:8080/server/${serverData.id}`, {
           name: serverData.name,
           img: serverData.image
         });

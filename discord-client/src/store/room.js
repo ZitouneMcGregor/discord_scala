@@ -10,7 +10,7 @@ export const useRoomStore = defineStore('rooms', {
   actions: {
     async fetchRooms(serverId) {
       try {
-        const response = await axios.get(`http://localhost:8080/server/${serverId}/rooms`);
+        const response = await axios.get(`http://34.175.236.217:8080/server/${serverId}/rooms`);
         this.rooms = response.data;
       } catch (error) {
         console.error('Erreur lors de la récupération des rooms', error);
@@ -19,7 +19,7 @@ export const useRoomStore = defineStore('rooms', {
 
     async addRoom(serverId, roomName) {
       try {
-        const response = await axios.post(`http://localhost:8080/server/${serverId}/rooms`, {
+        const response = await axios.post(`http://34.175.236.217:8080/server/${serverId}/rooms`, {
           name: roomName
         });
         if (response.status === 201) {
@@ -32,7 +32,7 @@ export const useRoomStore = defineStore('rooms', {
 
     async updateRoom({ serverId, roomId, newName }) {
       try {
-        const response = await axios.put(`http://localhost:8080/server/${serverId}/rooms`, {
+        const response = await axios.put(`http://34.175.236.217:8080/server/${serverId}/rooms`, {
           id: roomId,
           name: newName
         });
@@ -46,7 +46,7 @@ export const useRoomStore = defineStore('rooms', {
 
     async deleteRoom(serverId, roomId) {
       try {
-        const response = await axios.delete(`http://localhost:8080/server/${serverId}/rooms`, {
+        const response = await axios.delete(`http://34.175.236.217:8080/server/${serverId}/rooms`, {
           data: {
             id: parseInt(roomId,10),
             name: "",
