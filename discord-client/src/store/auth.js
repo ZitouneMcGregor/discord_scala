@@ -13,7 +13,7 @@ export const useAuthStore = defineStore('auth', {
     actions: {
         async login(username, password) {
             try {
-                const response = await axios.get(`http://34.175.236.217:8080/users/${username}`);
+                const response = await axios.get(`http://localhost:8080/users/${username}`);
                 if (response.data.password === password) {
                     this.user = response.data;
                     localStorage.setItem('user', JSON.stringify(response.data));
@@ -32,7 +32,7 @@ export const useAuthStore = defineStore('auth', {
 
         async register(username, password) {
             try {
-                const response = await axios.post('http://34.175.236.217:8080/users', {
+                const response = await axios.post('http://localhost:8080/users', {
                     username, password
                 });
                 return response.status === 201;
@@ -43,7 +43,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async updateUser(userName, { newUsername, newPassword }) {
             try {
-              const response = await axios.put(`http://34.175.236.217:8080/users/${userName}`, {
+              const response = await axios.put(`http://localhost:8080/users/${userName}`, {
                 username: newUsername,
                 password: newPassword
               });

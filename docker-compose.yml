@@ -1,23 +1,6 @@
 version: '3.8'
 
 services:
-  discordclient:
-    build: ./discord-client
-    ports:
-      - "8081:80"
-    depends_on:
-      - adminapi
-
-  adminapi:
-    build: ./adminapi
-    ports:
-      - "8080:8080"
-    environment:
-      JDBC_URL: "jdbc:mysql://mysql:3306/AdminDiscord"
-      DB_USER: "root"
-      DB_PASSWORD: "1234567aA*"
-    depends_on:
-      - mysql
   mysql:
     image: mysql:8.0
     container_name: adminbdd
