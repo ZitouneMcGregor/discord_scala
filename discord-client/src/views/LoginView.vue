@@ -41,7 +41,12 @@ const handleSubmit = async () => {
   } else {
     const success = await authStore.login(username.value, password.value);
     if (success) {
-      router.push('/home');
+      const user = await authStore.getUser(username.value); 
+      if (user && !user.deleted) {
+        router.push('/home');
+      } else {
+        alert('Votre compte a été supprimé.');
+      }
     } else {
       alert('Identifiants incorrects.');
     }
