@@ -14,18 +14,28 @@
           Enregistrer
         </button>
       </div>
+
+      <div class="supp-user">
+        <button class="btn-danger" @click="deleteAccount">
+          Supprimer mon compte
+      </button>
+      </div>
+
     </div>
   </template>
   
   <script>
   import { ref } from 'vue'
   import { useAuthStore } from '../store/auth';
+  import { useRouter } from 'vue-router';
+
   
   export default {
     setup() {
       const authStore = useAuthStore()
       const newUsername = ref('')
       const newPassword = ref('')
+      const router = useRouter()
   
       async function updateProfile() {
         const userName = authStore.user.username
@@ -41,13 +51,37 @@
           alert('Erreur lors de la mise à jour du profil');
         }
       }
-  
-      return {
-        authStore,
-        newUsername,
-        newPassword,
-        updateProfile
+
+      async function deleteAccount() {
+        if (!confirm("Voulez-vous vraiment supprimer votre compte ? Cette action est irréversible.")) {
+          return;
+        }
+
+        const userName = authStore.user.username;
+        try {
+          const success = await authStore.deleteAccount(userName);
+          if (success) {
+            alert("Compte supprimé avec succès !");
+            authStore.logout();
+            router.push('/home');
+          } else {
+            alert("Erreur lors de la suppression du compte.");
+          }
+        } catch (error) {
+          alert("Erreur lors de la suppression du compte.");
+        }
       }
+
+
+
+    return {
+      authStore,
+      newUsername,
+      newPassword,
+      updateProfile,
+      deleteAccount
+    }
+
     }
   }
   </script>
@@ -60,13 +94,15 @@
     min-height: 100vh;
   }
   
-  .profile-form {
+  .profile-form, .supp-user {
     display: flex;
     flex-direction: column;
     gap: 10px;
     max-width: 300px;
     margin-top: 20px;
   }
+
+
   
   label {
     font-weight: bold;
@@ -81,7 +117,6 @@
     color: #fff;
   }
   
-  /* Bouton principal */
   .btn-primary {
     background-color: #5865F2;
     color: #fff;
@@ -94,5 +129,19 @@
   .btn-primary:hover {
     background-color: #4752c4;
   }
+
+  .btn-danger {
+    background-color: #fa0000;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .btn-danger:hover {
+    background-color: #c03502;
+  }
+
   </style>
   
