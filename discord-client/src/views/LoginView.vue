@@ -31,13 +31,14 @@ const toggleMode = () => {
 
 const handleSubmit = async () => {
   if (isRegistering.value) {
-    const success = await authStore.register(username.value, password.value);
-    if (success) {
-      alert('Inscription réussie, connectez-vous.');
-      isRegistering.value = false;
-    } else {
-      alert('Erreur lors de l\'inscription.');
-    }
+        const result = await authStore.register(username.value, password.value);
+
+        if (result.success) {
+            alert(result.message);
+            isRegistering.value = false;
+        } else {
+            alert(`Erreur : ${result.message}`);
+        }
   } else {
     const success = await authStore.login(username.value, password.value);
     if (success) {
