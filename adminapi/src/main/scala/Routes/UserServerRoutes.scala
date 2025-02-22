@@ -43,8 +43,12 @@ object UserServerRoutes extends UserServerJsonFormats{
                                case Success(true) => complete(StatusCodes.Created -> "User added to the server successfully")
                             
                             
-                               case Success(false) => complete(StatusCodes.InternalServerError -> "Error while inserting the user to the server in the db")
-
+                               case Success(false) => 
+                                    if (userServerWithIdServer.server_id.isDefined) {
+                                                        complete(StatusCodes.BadRequest -> "Limite d'utilisateurs atteinte pour ce serveur")
+                                                    } else {
+                                                        complete(StatusCodes.InternalServerError -> "Error while inserting the user to the server in the db")
+                                                    }
                                case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
 
                             }
