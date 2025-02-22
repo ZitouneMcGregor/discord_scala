@@ -40,11 +40,10 @@ object UserRoutes extends UserJsonFormats {
         post {
           entity(as[User]) { user =>
             onComplete(UserDAO.insertUser(user)) {
-              case Success(true) => complete(StatusCodes.Created -> "User inserted successfully")
-            
-             case Success(false) => complete(StatusCodes.InternalServerError -> "Error inserting user")
-
-            case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
+              case Success(Right(true)) => complete(StatusCodes.Created -> "User inserted successfully")
+              case Success(Right(false)) => complete(StatusCodes.InternalServerError -> "Error inserting user")
+              case Success(Left(error)) => complete(StatusCodes.Conflict -> error)
+              case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
 
             }
           }
