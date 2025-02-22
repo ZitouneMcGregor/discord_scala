@@ -72,7 +72,11 @@ export const useServerStore = defineStore('servers', {
           await this.fetchUserServers(userId);
         }
       } catch (error) {
-        console.error('Erreur joinServer', error);
+        if (error.response && error.response.status === 400) {
+          console.error(`Limite d'utilisateurs atteinte pour le serveur ${serverId}`);
+        } else {
+          console.error('Erreur joinServer', error);
+        }     
       }
     },
 
