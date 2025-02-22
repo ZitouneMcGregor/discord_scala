@@ -1,6 +1,7 @@
 // store/servers.js
 import { defineStore } from 'pinia';
 import axios from 'axios';
+const apiUrl = import.meta.env.VITE_API_SCALA_URL
 
 export const useServerStore = defineStore('servers', {
   state: () => ({
@@ -12,7 +13,7 @@ export const useServerStore = defineStore('servers', {
   actions: {
     async fetchAllServers() {
       try {
-        const response = await axios.get('http://localhost:8080/server');
+        const response = await axios.get(`${apiUrl}/server`);
         this.allServers = response.data;
       } catch (error) {
         console.error('Erreur fetchAllServers', error);
@@ -21,7 +22,7 @@ export const useServerStore = defineStore('servers', {
 
     async fetchUserServers(userId) {
       try {
-        const response = await axios.get(`http://localhost:8080/users/${userId}/servers`);
+        const response = await axios.get(`${apiUrl}/users/${userId}/servers`);
         this.userServers = response.data;
       } catch (error) {
         console.error('Erreur fetchUserServers', error);
@@ -41,7 +42,7 @@ export const useServerStore = defineStore('servers', {
 
     async createServer(serverName, serverImage) {
       try {
-        const response = await axios.post('http://localhost:8080/server', {
+        const response = await axios.post(`${apiUrl}/server`, {
           name: serverName,
           img: serverImage
         });
@@ -58,7 +59,7 @@ export const useServerStore = defineStore('servers', {
     async joinServer(userId, serverId) {
       try {
         const response = await axios.post(
-          `http://localhost:8080/server/${serverId}/userServer`,
+          `${apiUrl}/server/${serverId}/userServer`,
           {
             user_id: userId,
             server_id: serverId
@@ -82,7 +83,7 @@ export const useServerStore = defineStore('servers', {
 
     async leaveServer(userId, serverId) {
       try {
-        const response = await axios.delete(`http://localhost:8080/server/${serverId}/userServer`, {
+        const response = await axios.delete(`${apiUrl}/server/${serverId}/userServer`, {
           data: { user_id: userId, server_id: serverId }
         });
         if (response.status === 200) {
@@ -95,7 +96,7 @@ export const useServerStore = defineStore('servers', {
 
     async updateServer(serverData) {
       try {
-        const response = await axios.put(`http://localhost:8080/server/${serverData.id}`, {
+        const response = await axios.put(`${apiUrl}/server/${serverData.id}`, {
           name: serverData.name,
           img: serverData.image
         });

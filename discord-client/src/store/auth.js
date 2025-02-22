@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
-
+const apiUrl = import.meta.env.VITE_API_SCALA_URL
 export const useAuthStore = defineStore('auth', {
+    
     state: () => ({
         user: JSON.parse(localStorage.getItem('user')) || null
     }),
@@ -13,7 +14,7 @@ export const useAuthStore = defineStore('auth', {
     actions: {
         async login(username, password) {
             try {
-                const response = await axios.get(`http://localhost:8080/users/${username}`);
+                const response = await axios.get(`${apiUrl}/users/${username}`);
                 if (response.data.password === password) {
                     this.user = response.data;
                     localStorage.setItem('user', JSON.stringify(response.data));
@@ -32,7 +33,7 @@ export const useAuthStore = defineStore('auth', {
 
         async register(username, password) {
             try {
-                const response = await axios.post('http://localhost:8080/users', {
+                const response = await axios.post(`${apiUrl}/users`, {
                     username, password
                 });
                 return response.status === 201;
@@ -43,7 +44,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async updateUser(userName, { newUsername, newPassword }) {
             try {
-              const response = await axios.put(`http://localhost:8080/users/${userName}`, {
+              const response = await axios.put(`${apiUrl}/users/${userName}`, {
                 username: newUsername,
                 password: newPassword
               });
@@ -59,7 +60,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async deleteAccount(userName) {
             try {
-              const response = await axios.delete(`http://localhost:8080/users/${userName}`);
+              const response = await axios.delete(`${apiUrl}/users/${userName}`);
               if (response.status === 200) {
                 this.user = null;
                 localStorage.removeItem('user');
@@ -72,7 +73,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async getUser(username) {
             try {
-                const response = await axios.get(`http://localhost:8080/users/${username}`); // Assurez-vous que l'URL est correcte ici
+                const response = await axios.get(`${apiUrl}/users/${username}`); // Assurez-vous que l'URL est correcte ici
                 if (response.status === 200) {
                     return response.data; // L'utilisateur retourné contient un champ "deleted"
                 } else {

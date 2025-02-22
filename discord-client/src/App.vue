@@ -13,6 +13,8 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import Sidebar from './views/Sidebar.vue';
 
+document.title = import.meta.env.VITE_APP_TITLE || 'DICORDWISH';
+
 const route = useRoute()
 const currentRouteName = computed(() => route.name)
 </script>
