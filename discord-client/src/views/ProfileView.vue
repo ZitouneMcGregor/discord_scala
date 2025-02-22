@@ -53,7 +53,7 @@
       }
 
       async function deleteAccount() {
-        if (!confirm("Voulez-vous vraiment supprimer votre compte ? Cette action est irréversible.")) {
+        if (!confirm("Voulez-vous vraiment supprimer votre compte ?")) {
           return;
         }
 
