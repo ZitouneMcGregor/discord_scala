@@ -19,39 +19,44 @@ object UserServerDAO{
     given ExecutionContext = ExecutionContext.global
 
 
-    def insertUserServer(userServer: UserServer): Future[Boolean]= Future{
-        val connection = DatabaseConfig.getConnection
-        val query = "INSERT INTO SERVER_USER (user_id, server_id) VALUES (?, ?)"
+    def insertUserServer(userServer: UserServer): Future[Boolean] = Future {
+    val connection = DatabaseConfig.getConnection
+    val countQuery = "SELECT COUNT(*) FROM SERVER_USER WHERE server_id=?"
+    val insertQuery = "INSERT INTO SERVER_USER (user_id, server_id) VALUES (?, ?)"
 
-        try{
-            val statement: PreparedStatement = connection.prepareStatement(query)
-            userServer.user_id match{
-                case Some(value) => statement.setInt(1, value)
-                case None => 
-                    println("Error, server id is null") 
+    try {
+        // Vérifier que `server_id` et `user_id` sont définis
+        (userServer.server_id, userServer.user_id) match {
+            case (Some(serverId), Some(userId)) =>
+                // Vérifier le nombre d'utilisateurs sur ce serveur
+                val countStatement: PreparedStatement = connection.prepareStatement(countQuery)
+                countStatement.setInt(1, serverId)
+                val resultSet: ResultSet = countStatement.executeQuery()
+
+                if (resultSet.next() && resultSet.getInt(1) >= 10) {
+                    println(" Limite d'utilisateurs atteinte pour le serveur ")
                     false
-            }
-            
+                } else {
+                  val insertStatement: PreparedStatement = connection.prepareStatement(insertQuery)
+                  insertStatement.setInt(1, userId)
+                  insertStatement.setInt(2, serverId)
 
-            userServer.server_id match{
-                case Some(value) => statement.setInt(2, value)
-                case None => 
-                    println("Error, server id is null") 
-                    false
-            }
-
-            val rowsInserted = statement.executeUpdate()
-            rowsInserted > 0
-
-        }catch{
-            case e:Exception =>
-                e.printStackTrace()
+                  val rowsInserted = insertStatement.executeUpdate()
+                  rowsInserted > 0
+                }
+            case _ =>
+                println(" Error, server_id ou user_id est null")
                 false
-        }finally{
-            connection.close()
         }
-        }
-        
+    } catch {
+        case e: Exception =>
+            e.printStackTrace()
+            false
+    } finally {
+        connection.close()
+    }
+}
+
     def deleteUserServer(userServer: UserServer): Future[Boolean] =Future {
         val connection = DatabaseConfig.getConnection
         val query = "DELETE FROM SERVER_USER WHERE user_id = ? AND server_id = ?"
