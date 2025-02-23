@@ -7,6 +7,7 @@ export const useServerStore = defineStore('servers', {
     allServers: [],
     userServers: [],
     unjoinedServers: [],
+    serverUsers: []
   }),
 
   actions: {
@@ -39,20 +40,34 @@ export const useServerStore = defineStore('servers', {
       );
     },
 
-    async createServer(serverName, serverImage) {
+    async createServer(serverName, serverImage, userId) {
       try {
         const response = await axios.post('http://localhost:8080/server', {
           name: serverName,
           img: serverImage
-        });
+        })
+
         if (response.status === 201) {
-          await this.fetchAllServers();
-          return true;
+          const newServerId = parseInt(response.data, 10)
+          
+          const addResp = await axios.post(`http://localhost:8080/server/${newServerId}/userServer`, {
+            user_id: userId,
+            server_id: newServerId,
+            admin: true
+          })
+          if (addResp.status === 201) {
+            console.log('User ajouté comme admin sur le nouveau serveur.')
+          } else {
+            console.error('Erreur pour ajouter l’utilisateur comme admin', addResp)
+          }
+          await this.fetchAllServers()
+          return true
         }
+        
       } catch (error) {
-        console.error('Erreur createServer', error);
+        console.error('Erreur createServer', error)
       }
-      return false;
+      return false
     },
 
     async addUserOnServer(userId, serverId) {
@@ -106,6 +121,15 @@ export const useServerStore = defineStore('servers', {
         console.error('Erreur lors de la mise à jour du serveur', error);
       }
     },
+
+    async fetchServerUsers(serverId) {
+      try {
+        const response = await axios.get(`http://localhost:8080/server/${serverId}/users`);
+        this.serverUsers = response.data;
+        console.log(this.serverUsers)
+      } catch (error) {
+        console.error('Erreur fetchServerUsers', error);
+     },
 
     async deleteServer(serverId) {
       try {

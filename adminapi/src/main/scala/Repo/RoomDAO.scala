@@ -2,7 +2,7 @@ package Repo
 
 import java.sql.PreparedStatement
 import java.sql.ResultSet
-import Models.Room
+import models.Room
 import utils.DatabaseConfig
 import java.sql.PreparedStatement
 import scala.collection.mutable.ListBuffer

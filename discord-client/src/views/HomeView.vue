@@ -87,7 +87,7 @@ export default {
       const image = newServerImage.value.trim()
       if (!name) return
 
-      const success = await serverStore.createServer(name, image)
+      const success = await serverStore.createServer(name, image, authStore.user.id)
       if (success) {
         await serverStore.fetchUnjoinedServers(authStore.user.id)
         newServerName.value = ''

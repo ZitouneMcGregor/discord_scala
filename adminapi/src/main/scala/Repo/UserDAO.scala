@@ -136,6 +136,34 @@ object UserDAO {
     updated
   }
 
+  def getUserById(id: Int): Future[Option[User]] = Future {
+    val connection = DatabaseConfig.getConnection
+    val query = "SELECT * FROM USER WHERE id = ?"
+    var user: Option[User] = None
+
+    try {
+        val statement = connection.prepareStatement(query)
+        statement.setInt(1, id)
+        val resultSet: ResultSet = statement.executeQuery()
+
+        if (resultSet.next()) {
+            user = Some(User(
+                Some(resultSet.getInt("id")),
+                resultSet.getString("username"),
+                resultSet.getString("password"),
+                Some(resultSet.getBoolean("deleted"))
+          ))
+        }
+    } catch {
+        case e: Exception =>
+            e.printStackTrace()
+    } finally {
+        connection.close()
+    }
+
+    user
+}
+
 
 }
 

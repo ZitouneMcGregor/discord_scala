@@ -1,7 +1,8 @@
 <template>
   <div class="server-layout">
-    <!-- Colonne de gauche -->
+    <!-- Colonne de gauche : Rooms et options serveur -->
     <div class="left-panel">
+
       <h1>Serveur</h1>
 
       <button class="btn-primary" @click="openInviteModal">Inviter des gens</button>
@@ -19,28 +20,30 @@
         <li
           v-for="room in roomStore.rooms"
           :key="room.id"
-          :class="{ selected: selectedRoom?.id === room.id }"
+          :class="{ selected: selectedRoom && selectedRoom.id === room.id }"
           @click="selectRoom(room)"
         >
           {{ room.name }}
         </li>
       </ul>
-
-      <!-- Ajouter une room -->
       <div class="add-room">
         <input v-model="newRoomName" placeholder="Nom de la room" />
         <button class="btn-primary" @click="addRoom">Ajouter</button>
       </div>
+      <button class="btn-danger" @click="leaveCurrentServer">
+        Quitter le serveur
+      </button>
+      <div class="update-server-section">
 
       <!-- Formulaire de mise à jour du serveur -->
       <div class="update-server-section" style="margin-top: 20px;">
         <h3>Modifier le serveur</h3>
-        <input 
-          v-model="updatedServerName" 
+        <input
+          v-model="updatedServerName"
           placeholder="Nouveau nom du serveur"
         />
-        <input 
-          v-model="updatedServerImage" 
+        <input
+          v-model="updatedServerImage"
           placeholder="Nouvelle URL d'image"
         />
         <button class="btn-primary" @click="updateServerInfo">
@@ -48,6 +51,25 @@
         </button>
       </div>
     </div>
+
+    <!-- Colonne centrale : Détails de la room sélectionnée -->
+    <div class="middle-panel">
+      <div v-if="!selectedRoom" class="no-room-selected">
+        <p>Sélectionnez une room pour la modifier ou la supprimer</p>
+      </div>
+      <div v-else class="room-edit-panel">
+        <h3>Modifier la room : {{ selectedRoom.name }}</h3>
+        <input
+          v-model="editRoomName"
+          placeholder="Nouveau nom de la room"
+        />
+        <div class="buttons">
+          <button class="btn-primary" @click="updateSelectedRoom">
+            Enregistrer
+          </button>
+          <button class="btn-danger" @click="deleteSelectedRoom">
+            Supprimer
+          </button>
 
     <!-- Modale d'invitation -->
     <div v-if="showInviteModal">
@@ -99,12 +121,27 @@
         </div>
       </div>
     </div>
+
+    <!-- Colonne de droite : Liste des utilisateurs du serveur -->
+    <div class="right-panel">
+      <h3>Utilisateurs</h3>
+      <ul>
+        <li
+          v-for="user in serverStore.serverUsers"
+          :key="user.user.id"
+          :class="{ admin: user.admin }"
+        >
+          {{ user.user.username }}
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
 <script>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
 
 import { useAuthStore } from '../store/auth'
 import { useServerStore } from '../store/servers'
@@ -113,8 +150,12 @@ import { useUserStore } from '../store/user'
 
 export default {
   setup() {
-    const route = useRoute();
-    const router = useRouter();
+    const route = useRoute()
+    const router = useRouter()
+    const authStore = useAuthStore()
+    const serverStore = useServerStore()
+    const roomStore = useRoomStore()
+
 
     const authStore = useAuthStore();
     const serverStore = useServerStore();
@@ -171,53 +212,58 @@ export default {
 
     onMounted(async () => {
       if (serverId) {
-        await roomStore.fetchRooms(serverId);
+        await roomStore.fetchRooms(serverId)
+        await serverStore.fetchServerUsers(serverId)
       }
-    });
+    })
 
+    // Sélectionne une room (sans changer de route)
     function selectRoom(room) {
-      selectedRoom.value = room;
-      editRoomName.value = room.name;
+      selectedRoom.value = room
+      editRoomName.value = room.name
     }
 
+    // Ajouter une room
     async function addRoom() {
-      if (!newRoomName.value.trim()) return;
-      await roomStore.addRoom(serverId, newRoomName.value.trim());
-      newRoomName.value = '';
+      if (!newRoomName.value.trim()) return
+      await roomStore.addRoom(serverId, newRoomName.value.trim())
+      newRoomName.value = ''
     }
 
+    // Mettre à jour la room sélectionnée
     async function updateSelectedRoom() {
-      if (!selectedRoom.value) return;
+      if (!selectedRoom.value) return
       await roomStore.updateRoom({
         serverId,
         roomId: selectedRoom.value.id,
         newName: editRoomName.value.trim()
-      });
-      selectedRoom.value.name = editRoomName.value.trim();
+      })
+      selectedRoom.value.name = editRoomName.value.trim()
     }
 
+    // Supprimer la room sélectionnée
     async function deleteSelectedRoom() {
-      if (!selectedRoom.value) return;
-      await roomStore.deleteRoom(serverId, selectedRoom.value.id);
-      await roomStore.fetchRooms(serverId);
-      selectedRoom.value = null;
-      editRoomName.value = '';
+      if (!selectedRoom.value) return
+      await roomStore.deleteRoom(serverId, selectedRoom.value.id)
+      await roomStore.fetchRooms(serverId)
+      selectedRoom.value = null
+      editRoomName.value = ''
     }
 
+    // Quitter le serveur
     async function leaveCurrentServer() {
-      await serverStore.leaveServer(authStore.user.id, Number(serverId));
-      router.push('/home');
+      await serverStore.leaveServer(authStore.user.id, Number(serverId))
+      router.push('/home')
     }
 
+    // Mettre à jour les infos du serveur
     async function updateServerInfo() {
-      if (!updatedServerName.value.trim() && !updatedServerImage.value.trim()) {
-        return;
-      }
+      if (!updatedServerName.value.trim() && !updatedServerImage.value.trim()) return
       await serverStore.updateServer({
         id: Number(serverId),
         name: updatedServerName.value.trim(),
         image: updatedServerImage.value.trim()
-      });
+      })
     }
 
     async function deleteServer() {
@@ -256,18 +302,21 @@ export default {
 </script>
 
 <style scoped>
+/* Layout principal en 3 colonnes */
 .server-layout {
   display: flex;
-  height: 100%;
+  height: 100vh;
+  font-family: Arial, sans-serif;
 }
 
-/* Style pour la colonne de gauche */
+
 .left-panel {
   width: 250px;
   background-color: #2f3136;
   padding: 15px;
   overflow-y: auto;
 }
+
 
 .left-panel h1,
 .left-panel h2,
@@ -300,6 +349,11 @@ export default {
 }
 
 .add-room {
+  margin-top: 10px;
+  display: flex;
+  gap: 5px;
+}
+
   display: flex;
   margin-top: 15px;
   gap: 5px;
@@ -340,6 +394,7 @@ export default {
   flex-direction: column;
   gap: 10px;
 }
+
 
 /* Style pour la colonne de droite */
 .right-panel {
@@ -464,5 +519,63 @@ export default {
   display: flex;
   justify-content: space-between;
   gap: 10px;
+}
+
+/* Colonne de droite : Liste des utilisateurs */
+.right-panel {
+  width: 200px;
+  background-color: #2f3136;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.right-panel h3 {
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.right-panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.right-panel li {
+  margin-bottom: 6px;
+  color: #fff;
+}
+
+.right-panel li.admin {
+  color: yellow;
+  font-weight: bold;
+}
+
+/* Boutons généraux */
+.btn-primary {
+  background-color: #5865F2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #4752c4;
+}
+
+.btn-danger {
+  background-color: #f04747;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-danger:hover {
+  background-color: #ce3c3c;
 }
 </style>

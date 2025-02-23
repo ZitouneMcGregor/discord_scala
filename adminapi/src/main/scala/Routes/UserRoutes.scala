@@ -15,16 +15,20 @@ import org.apache.pekko.http.scaladsl.model.HttpMethods._
 import org.apache.pekko.http.cors.scaladsl.model.HttpHeaderRange
 import scala.collection.immutable.Seq
 
+import spray.json._
+import spray.json.DefaultJsonProtocol._
+
 import org.apache.pekko.actor.*
 import org.apache.pekko.stream.scaladsl.*
 import org.apache.pekko.http.scaladsl.*
 import org.apache.pekko.http.cors.scaladsl.CorsDirectives.*
 import scala.util.{Success, Failure}
 
+case class UserWithAdmin(user: User, admin: Boolean)
 
 trait UserJsonFormats extends DefaultJsonProtocol {
-  given userFormat: RootJsonFormat[User] = jsonFormat4(User.apply)
-  given userListFormat: RootJsonFormat[List[User]] = listFormat(userFormat)
+  implicit val userFormat: RootJsonFormat[User] = jsonFormat4(User.apply)
+  implicit val userListFormat: RootJsonFormat[UserWithAdmin] = jsonFormat2(UserWithAdmin.apply)
 }
 
 object UserRoutes extends UserJsonFormats {
@@ -47,9 +51,6 @@ object UserRoutes extends UserJsonFormats {
 
             }
           }
-        } ~
-        get {
-          complete(UserDAO.getAllUsers)
         }
       } ~
       path(Segment) { username =>
@@ -93,16 +94,24 @@ object UserRoutes extends UserJsonFormats {
         }
       }
     } ~
-    pathPrefix("server" / IntNumber) { id_server =>
-    path("users") {
-    get {
-      complete(UserServerDAO.getAllUserFromServer(id_server))
-    }
-  } ~
-    path("invite") {
-    get {
+    pathPrefix("server" / IntNumber / "users") { id_server =>
+      get {
+        onComplete(UserServerDAO.getAllUserFromServer(id_server)) {
+          case Success(userTuples) =>
+            val usersWithAdmin = userTuples.map { case (user, admin) =>
+              UserWithAdmin(user, admin)
+            }
+            complete(usersWithAdmin.toJson)
+          case Failure(ex) =>
+            complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
+        }
+      } ~
+    pathPrefix("server" / IntNumber / "invite") { id_server =>
+      get {
       complete(UserServerDAO.getAllUserNotFromServer(id_server))
+
     }
+
   }
     }
   }

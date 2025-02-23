@@ -27,9 +27,11 @@ trait ServerJsonFormats extends DefaultJsonProtocol {
 object ServerRoutes extends ServerJsonFormats {
 
   val corsSettings: CorsSettings = CorsSettings.defaultSettings
-    .withAllowedOrigins(HttpOriginMatcher.*)
-    .withAllowedMethods(Seq(GET, POST, PUT, DELETE, OPTIONS))
-    .withAllowedHeaders(HttpHeaderRange.*)
+  .withAllowedOrigins(HttpOriginMatcher.*)
+  .withAllowedMethods(Seq(GET, POST, PUT, DELETE, OPTIONS))
+  .withAllowedHeaders(HttpHeaderRange.*)
+
+
 
   val route: Route =
     cors(corsSettings) {
@@ -37,13 +39,17 @@ object ServerRoutes extends ServerJsonFormats {
         pathEnd {
           post {
             entity(as[Server]) { server =>
-              onComplete(ServerDAO.insertServer(server)) {
-                case Success(true)  => complete(StatusCodes.Created -> "Server inserted successfully")
-                case Success(false) => complete(StatusCodes.InternalServerError -> "Error inserting Server in the db")
-                case Failure(ex)    => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
-              }
+                onComplete(ServerDAO.insertServer(server)) {
+                    case Success(Some(insertedId)) =>
+                        complete(StatusCodes.Created, insertedId.toString)
+                    case Success(None) =>
+                        complete(StatusCodes.InternalServerError -> "Error inserting Server in the db")
+                    case Failure(ex) =>
+                        complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
+                }
             }
-          } ~
+        } ~
+
           get {
             complete(ServerDAO.getAllServer)
           }
