@@ -134,14 +134,14 @@ export default {
 
     const filteredUsers = computed(() => {
       if (!inviteInput.value) return [];
-      return userStore.allUsers.filter(user =>
+      return userStore.inviteUsers.filter(user =>
         user.username.toLowerCase().includes(inviteInput.value.toLowerCase())
       );
     });
 
     function openInviteModal() {
       showInviteModal.value = true;
-      userStore.fetchAllUsers();
+      userStore.fetchInviteUsers(Number(serverId));
     }
 
     function closeInviteModal() {
@@ -169,7 +169,6 @@ export default {
       }
     }
 
-    // Gestion des rooms et du serveur
     onMounted(async () => {
       if (serverId) {
         await roomStore.fetchRooms(serverId);
