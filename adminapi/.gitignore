@@ -28,7 +28,7 @@ local.sbt
 ../metals/metals.mv.db
 ../metals.log
 metals.sbt
-.metals
+../metals/
 
 # IDEA
 .idea
