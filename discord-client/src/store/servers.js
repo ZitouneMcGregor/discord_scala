@@ -55,7 +55,7 @@ export const useServerStore = defineStore('servers', {
       return false;
     },
 
-    async joinServer(userId, serverId) {
+    async addUserOnServer(userId, serverId) {
       try {
         const response = await axios.post(
           `http://localhost:8080/server/${serverId}/userServer`,
