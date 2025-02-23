@@ -7,6 +7,7 @@ export const useServerStore = defineStore('servers', {
     allServers: [],
     userServers: [],
     unjoinedServers: [],
+    serverUsers: []
   }),
 
   actions: {
@@ -119,9 +120,9 @@ export const useServerStore = defineStore('servers', {
 
     async fetchServerUsers(serverId) {
       try {
-        // Suppose qu’il y a un GET /server/:serverId/users
         const response = await axios.get(`http://localhost:8080/server/${serverId}/users`);
         this.serverUsers = response.data;
+        console.log(this.serverUsers)
       } catch (error) {
         console.error('Erreur fetchServerUsers', error);
       }

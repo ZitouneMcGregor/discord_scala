@@ -21,14 +21,14 @@ object UserServerDAO{
 
     def insertUserServer(userServer: UserServer): Future[Boolean]= Future{
         val connection = DatabaseConfig.getConnection
-        val query = "INSERT INTO SERVER_USER (user_id, server_id) VALUES (?, ?)"
+        val query = "INSERT INTO SERVER_USER (user_id, server_id, admin) VALUES (?, ?, ?)"
 
         try{
             val statement: PreparedStatement = connection.prepareStatement(query)
             userServer.user_id match{
                 case Some(value) => statement.setInt(1, value)
                 case None => 
-                    println("Error, server id is null") 
+                    println("Error, user id is null") 
                     false
             }
             
@@ -37,6 +37,13 @@ object UserServerDAO{
                 case Some(value) => statement.setInt(2, value)
                 case None => 
                     println("Error, server id is null") 
+                    false
+            }
+
+            userServer.admin match{
+                case Some(value) => statement.setBoolean(3, value)
+                case None => 
+                    println("Error, admin is null") 
                     false
             }
 

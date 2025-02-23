@@ -63,11 +63,11 @@
       <h3>Utilisateurs</h3>
       <ul>
         <li
-          v-for="user in serverStore.serverUsers[1]"
-          :key="user.id"
+          v-for="user in serverStore.serverUsers"
+          :key="user.user.id"
           :class="{ admin: user.admin }"
         >
-          {{ user.username }}
+          {{ user.user.username }}
         </li>
       </ul>
     </div>
@@ -92,21 +92,17 @@ export default {
     // Récupère l'ID du serveur depuis l'URL
     const serverId = route.params.serverId
 
-    // Variables locales pour la gestion des rooms
     const selectedRoom = ref(null)
     const newRoomName = ref('')
     const editRoomName = ref('')
 
-    // Variables pour modifier le serveur
     const updatedServerName = ref('')
     const updatedServerImage = ref('')
 
-    // Au montage, on charge les rooms et la liste des utilisateurs du serveur
     onMounted(async () => {
       if (serverId) {
         await roomStore.fetchRooms(serverId)
         await serverStore.fetchServerUsers(serverId)
-        // Optionnel : si tu as un endpoint pour récupérer les infos du serveur, tu peux pré-remplir updatedServerName / updatedServerImage ici.
       }
     })
 
