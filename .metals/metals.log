@@ -6630,3 +6630,12 @@ WARNING: Unsupported notification method: metals/windowStateDidChange
 2025.02.23 13:30:57 INFO  no build target found for /home/cytech/discord_scala/adminapi/src/main/scala/Routes/ServerRoutes.scala. Using presentation compiler with project's scala-library version: 3.3.4[0m
 2025.02.23 13:30:57 WARN  no build target for: /home/cytech/discord_scala/adminapi/src/main/scala/Routes/ServerRoutes.scala[0m
 2025.02.23 13:30:57 INFO  no build target found for /home/cytech/discord_scala/adminapi/src/main/scala/Routes/ServerRoutes.scala. Using presentation compiler with project's scala-library version: 3.3.4[0m
+Feb 23, 2025 1:31:15 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+WARNING: Unsupported notification method: metals/windowStateDidChange
+Feb 23, 2025 1:31:41 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+WARNING: Unsupported notification method: metals/windowStateDidChange
+2025.02.23 13:31:41 INFO  no build target found for /home/cytech/discord_scala/adminapi/src/main/scala/Routes/ServerRoutes.scala. Using presentation compiler with project's scala-library version: 3.3.4[0m
+Feb 23, 2025 1:32:36 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+WARNING: Unsupported notification method: metals/windowStateDidChange
+Feb 23, 2025 1:32:38 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+WARNING: Unsupported notification method: metals/windowStateDidChange
