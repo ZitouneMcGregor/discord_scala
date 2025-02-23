@@ -32,15 +32,27 @@ export const useAuthStore = defineStore('auth', {
 
         async register(username, password) {
             try {
-                const response = await axios.post('http://localhost:8080/users', {
-                    username, password
-                });
-                return response.status === 201;
+                const response = await axios.post('http://localhost:8080/users', { username, password });
+        
+                if (response.status === 201) {
+                    return { success: true, message: "Inscription réussie !" };
+                }
+        
+                return { success: false, message: "Réponse inattendue du serveur." };
+        
             } catch (error) {
-                console.error('Register error', error);
-                return false;
+                if (error.response) {
+                    if (error.response.status === 409) {
+                        return { success: false, message: "Désolé, ce nom d'utilisateur est déjà pris." };
+                    } else if (error.response.status === 500) {
+                        return { success: false, message: "Erreur interne du serveur. Réessayez plus tard." };
+                    }
+                }
+        
+                return { success: false, message: "Problème de connexion. Vérifiez votre réseau." };
             }
         },
+        
         async updateUser(userName, { newUsername, newPassword }) {
             try {
               const response = await axios.put(`http://localhost:8080/users/${userName}`, {

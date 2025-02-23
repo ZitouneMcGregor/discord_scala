@@ -2,6 +2,7 @@ package dao
 
 import java.sql.PreparedStatement
 import java.sql.ResultSet
+import java.sql.SQLIntegrityConstraintViolationException
 import scala.collection.mutable.ListBuffer
 import models.User
 import utils.DatabaseConfig
@@ -12,7 +13,7 @@ object UserDAO {
 
   given ExecutionContext = ExecutionContext.global
 
-  def insertUser(user: User): Future[Boolean] = Future {
+  def insertUser(user: User): Future[Either[String,Boolean]] = Future {
     val connection = DatabaseConfig.getConnection
     val query = "INSERT INTO USER (username, password) VALUES (?, ?)"
 
@@ -24,11 +25,13 @@ object UserDAO {
 
 
       val rowsInserted = statement.executeUpdate()
-      rowsInserted > 0
+      Right(rowsInserted > 0)
     } catch {
+      case e: SQLIntegrityConstraintViolationException=>
+        Left("Sorry the username is already taken")
       case e: Exception =>
         e.printStackTrace()
-        false
+        Right(false)
     } finally {
       connection.close()
     }

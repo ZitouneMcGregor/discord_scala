@@ -23,8 +23,12 @@ local.sbt
 
 # Metals
 .bloop/
-.metals/
+../metals/metals.lock.db
+../metals/metals.log
+../metals/metals.mv.db
+../metals.log
 metals.sbt
+../metals/
 
 # IDEA
 .idea

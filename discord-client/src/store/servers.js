@@ -70,7 +70,7 @@ export const useServerStore = defineStore('servers', {
       return false
     },
 
-    async joinServer(userId, serverId) {
+    async addUserOnServer(userId, serverId) {
       try {
         const response = await axios.post(
           `http://localhost:8080/server/${serverId}/userServer`,
@@ -87,7 +87,11 @@ export const useServerStore = defineStore('servers', {
           await this.fetchUserServers(userId);
         }
       } catch (error) {
-        console.error('Erreur joinServer', error);
+        if (error.response && error.response.status === 400) {
+          console.error(`Limite d'utilisateurs atteinte pour le serveur ${serverId}`);
+        } else {
+          console.error('Erreur joinServer', error);
+        }     
       }
     },
 
@@ -125,6 +129,17 @@ export const useServerStore = defineStore('servers', {
         console.log(this.serverUsers)
       } catch (error) {
         console.error('Erreur fetchServerUsers', error);
+     },
+
+    async deleteServer(serverId) {
+      try {
+        const response = await axios.delete(`http://localhost:8080/server/${serverId}`);
+        if (response.status === 200) {
+          console.log(`Serveur ${serverId} supprimé avec succès`);
+          await this.fetchAllServers();
+        }
+      } catch (error) {
+        console.error('Erreur lors de la suppression du serveur', error);
       }
     }
   }

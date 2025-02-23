@@ -44,11 +44,10 @@ object UserRoutes extends UserJsonFormats {
         post {
           entity(as[User]) { user =>
             onComplete(UserDAO.insertUser(user)) {
-              case Success(true) => complete(StatusCodes.Created -> "User inserted successfully")
-            
-             case Success(false) => complete(StatusCodes.InternalServerError -> "Error inserting user")
-
-            case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
+              case Success(Right(true)) => complete(StatusCodes.Created -> "User inserted successfully")
+              case Success(Right(false)) => complete(StatusCodes.InternalServerError -> "Error inserting user")
+              case Success(Left(error)) => complete(StatusCodes.Conflict -> error)
+              case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
 
             }
           }
@@ -64,11 +63,21 @@ object UserRoutes extends UserJsonFormats {
           }
         } ~
         delete {
-          onComplete(UserDAO.deleteUser(username)) {
-            case Success(true) =>complete(StatusCodes.OK -> s"User $username deleted successfully")
-            case Success(false) => complete(StatusCodes.NotFound -> s"User $username not found or already deleted")
-           case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
-
+          onComplete(UserDAO.getUserByUsername(username)) {
+            case Success(Some(user)) =>
+              val newUsername = s"deletedAccount#${user.id}"
+              onComplete(UserDAO.updateUser(username, newUsername, user.password)) {
+                case Success(true) =>
+                  onComplete(UserDAO.deleteUser(newUsername)) {
+                    case Success(true) => complete(StatusCodes.OK -> s"User $username (renamed to $newUsername) deleted successfully")
+                    case Success(false) => complete(StatusCodes.NotFound -> s"Failed to delete user $newUsername")
+                    case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred while deleting: ${ex.getMessage}")
+                  }
+                case Success(false) => complete(StatusCodes.NotFound -> s"Failed to update user $username before deletion")
+                case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred while renaming: ${ex.getMessage}")
+              }
+            case Success(None) => complete(StatusCodes.NotFound -> s"User with username $username not found")
+            case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
           }
         } ~
         put {
@@ -96,8 +105,14 @@ object UserRoutes extends UserJsonFormats {
           case Failure(ex) =>
             complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
         }
-      }
+      } ~
+    pathPrefix("server" / IntNumber / "invite") { id_server =>
+      get {
+      complete(UserServerDAO.getAllUserNotFromServer(id_server))
+
     }
 
+  }
+    }
   }
 }
