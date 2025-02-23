@@ -105,6 +105,18 @@ export const useServerStore = defineStore('servers', {
       } catch (error) {
         console.error('Erreur lors de la mise à jour du serveur', error);
       }
+    },
+
+    async deleteServer(serverId) {
+      try {
+        const response = await axios.delete(`http://localhost:8080/server/${serverId}`);
+        if (response.status === 200) {
+          console.log(`Serveur ${serverId} supprimé avec succès`);
+          await this.fetchAllServers();
+        }
+      } catch (error) {
+        console.error('Erreur lors de la suppression du serveur', error);
+      }
     }
   }
 });
