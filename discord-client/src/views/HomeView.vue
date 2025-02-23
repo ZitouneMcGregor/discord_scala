@@ -39,7 +39,7 @@
             <span>{{ srv.name }}</span>
             <button
               class="btn-primary"
-              @click.stop="joinServer(srv.id)"
+              @click.stop="addUserOnServer(srv.id)"
             >
               Rejoindre
             </button>
@@ -95,8 +95,8 @@ export default {
       }
     }
 
-    async function joinServer(serverId) {
-      await serverStore.joinServer(authStore.user.id, serverId)
+    async function addUserOnServer(serverId) {
+      await serverStore.addUserOnServer(authStore.user.id, serverId)
     }
 
     return {
@@ -106,7 +106,7 @@ export default {
       newServerImage,
       handleLogout,
       createServer,
-      joinServer,
+      addUserOnServer,
       goToProfile
     }
   }
