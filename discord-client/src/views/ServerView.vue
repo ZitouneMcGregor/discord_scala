@@ -25,6 +25,11 @@
         Quitter le serveur
       </button>
 
+      <!-- Supp le serveur -->
+      <button class="btn-danger" style="margin-top: 20px;" @click="deleteServer">
+        Supprimer le serveur
+      </button>
+
       <!-- Formulaire pour mettre à jour le serveur -->
       <div class="update-server-section" style="margin-top: 20px;">
         <h3>Modifier le serveur</h3>
@@ -156,6 +161,12 @@ export default {
       });
     }
 
+    async function deleteServer() {
+      await serverStore.deleteServer(Number(serverId));
+      router.push('/home');
+    }
+
+
     return {
       serverId,
       selectedRoom,
@@ -171,6 +182,7 @@ export default {
       deleteSelectedRoom,
       leaveCurrentServer,
       updateServerInfo,
+      deleteServer,
 
       authStore,
       serverStore,
