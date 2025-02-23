@@ -2,7 +2,7 @@ package routes
 
 import spray.json.DefaultJsonProtocol
 import spray.json.RootJsonFormat
-import Models.UserServer
+import models.UserServer
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport.*

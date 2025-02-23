@@ -28,7 +28,7 @@ object ServerRoutes extends ServerJsonFormats {
 
   val corsSettings: CorsSettings = CorsSettings.defaultSettings
   .withAllowedOrigins(HttpOriginMatcher.*)
-  .withAllowedMethods(Seq(GET, POST, PUT, DELETE, OPTIONS)) // S'assurer que OPTIONS est autorisé
+  .withAllowedMethods(Seq(GET, POST, PUT, DELETE, OPTIONS))
   .withAllowedHeaders(HttpHeaderRange.*)
 
   val route: Route =
@@ -37,16 +37,15 @@ object ServerRoutes extends ServerJsonFormats {
         pathEnd {
           post {
             entity(as[Server]) { server =>
-              onComplete(ServerDAO.insertServer(server)) {
-                case Success(true) => complete(StatusCodes.Created -> "Server inserted successfully")
-              
-                case Success(false) => complete(StatusCodes.InternalServerError -> "Error inserting Server in the db")
-
-                case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
-
-              
+                onComplete(ServerDAO.insertServer(server)) {
+                    case Success(Some(insertedId)) =>
+                        complete(StatusCodes.Created, insertedId.toString)
+                    case Success(None) =>
+                        complete(StatusCodes.InternalServerError -> "Error inserting Server in the db")
+                    case Failure(ex) =>
+                        complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
+                }
             }
-          }
         } ~
           get {
             complete(ServerDAO.getAllServer)
@@ -56,7 +55,7 @@ object ServerRoutes extends ServerJsonFormats {
           path(IntNumber) { id =>
           put {
             entity(as[Server]) { server =>
-              val updatedServer = server.copy(id = Some(id)) // Update the server with the id from the URL
+              val updatedServer = server.copy(id = Some(id))
               onComplete(ServerDAO.updateServer(updatedServer)) {
                case Success(true) => complete(StatusCodes.OK -> "Server updated successfully")
               

@@ -7,29 +7,30 @@ import models.Server
 import utils.DatabaseConfig
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import java.sql.Statement
 
 object ServerDAO {
 
   given ExecutionContext = ExecutionContext.global
 
-  def insertServer(server: Server): Future[Boolean] = Future{
-    val connection = DatabaseConfig.getConnection
-    val query = "INSERT INTO SERVER (name, img) VALUES (?, ?)"
-    
-    try {
-      val statement: PreparedStatement = connection.prepareStatement(query)
-      statement.setString(1, server.name)
-      statement.setString(2, server.img)
+  def insertServer(server: Server): Future[Option[Int]] = Future {
+      val connection = DatabaseConfig.getConnection
+      try {
+          val query = "INSERT INTO SERVER (name, img) VALUES (?, ?)"
+          val statement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)
+          statement.setString(1, server.name)
+          statement.setString(2, server.img)
 
-      val rowsInserted = statement.executeUpdate()
-      rowsInserted > 0
-    } catch {
-      case e: Exception =>
-        e.printStackTrace()
-        false
-    } finally {
-      connection.close()
-    }
+          val rowsInserted = statement.executeUpdate()
+          if (rowsInserted > 0) {
+              val rs = statement.getGeneratedKeys
+              if (rs.next()) {
+                  Some(rs.getInt(1))
+              } else None
+          } else None
+      } finally {
+          connection.close()
+      }
   }
 
   def getAllServer: Future[List[Server]] = Future {

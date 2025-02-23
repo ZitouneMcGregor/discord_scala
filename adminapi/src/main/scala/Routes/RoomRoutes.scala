@@ -2,7 +2,7 @@ package Routes
 
 import spray.json.DefaultJsonProtocol
 import spray.json.RootJsonFormat
-import Models.Room
+import models.Room
 import org.apache.pekko.http.scaladsl.server.Route
 import Repo.RoomDAO
 import org.apache.pekko.http.scaladsl.server.Directives.*
