@@ -93,10 +93,17 @@ object UserRoutes extends UserJsonFormats {
         }
       }
     } ~
-    pathPrefix("server" / IntNumber / "users") { id_server =>
-      get {
-        complete(UserServerDAO.getAllUserFromServer(id_server))
-      }
+    pathPrefix("server" / IntNumber) { id_server =>
+    path("users") {
+    get {
+      complete(UserServerDAO.getAllUserFromServer(id_server))
+    }
+  } ~
+    path("invite") {
+    get {
+      complete(UserServerDAO.getAllUserNotFromServer(id_server))
+    }
+  }
     }
   }
 }

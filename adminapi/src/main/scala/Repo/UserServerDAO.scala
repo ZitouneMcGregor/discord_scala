@@ -117,6 +117,34 @@ object UserServerDAO{
         users.toList
   }
 
+      def getAllUserNotFromServer(server_id: Int): Future[List[User]] = Future{
+        val connection = DatabaseConfig.getConnection
+        val query = "SELECT u.* FROM USER u WHERE u.deleted = false AND u.id NOT IN (SELECT su.user_id FROM SERVER_USER su WHERE su.server_id = ?);"
+        val users = ListBuffer[User]()
+
+        try {
+            val statement: PreparedStatement = connection.prepareStatement(query)
+            statement.setInt(1, server_id)
+            val resultSet: ResultSet = statement.executeQuery()
+
+            while (resultSet.next()) {
+                 users += User(
+                Some(resultSet.getInt("id")),
+                resultSet.getString("username"),
+                resultSet.getString("password"),
+                Some(resultSet.getBoolean("deleted")),          
+        )
+      }
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+    } finally {
+      connection.close()
+    }
+
+        users.toList
+  }
+
     def getAllServerFromUser(user_id: Int): Future[List[Server]] = Future{
     val connection = DatabaseConfig.getConnection
     val query = "SELECT s.* FROM SERVER s, SERVER_USER su WHERE s.id = su.server_id AND su.user_id = ?;"
@@ -196,6 +224,7 @@ object UserServerDAO{
 
     updated
   }
+  
 
 
 
