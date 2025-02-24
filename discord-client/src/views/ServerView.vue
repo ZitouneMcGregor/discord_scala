@@ -46,6 +46,31 @@
       </div>
     </div>
 
+    <!-- Modale d'invitation -->
+    <div v-if="showInviteModal">
+      <!-- Overlay -->
+      <div class="modal-overlay" @click="closeInviteModal"></div>
+      <!-- Contenu de la modale -->
+      <div class="invite-modal">
+        <h3>Inviter des gens</h3>
+        <input 
+          v-model="inviteInput" 
+          placeholder="Entrez l'username de la personne à inviter"
+        />
+        <!-- Liste dynamique des utilisateurs filtrés -->
+        <ul v-if="filteredUsers.length">
+          <li 
+            v-for="user in filteredUsers" 
+            :key="user.id"
+            @click="selectUser(user)"
+          >
+            {{ user.username }}
+          </li>
+        </ul>
+        <button class="btn-primary modal-btn" @click="addUserOnServer">Inviter</button>
+      </div>
+    </div>
+
     <!-- Colonne du milieu -->
     <div class="middle-panel">
       <div class="right-panel">
@@ -287,11 +312,14 @@ export default {
 </script>
 
 <style scoped>
-/* Layout principal en 3 colonnes */
+
+/* Conteneur principal (3 colonnes) */
 .server-layout {
   display: flex;
   height: 100vh;
   font-family: Arial, sans-serif;
+  background-color: #36393f; /* fond général “Discord” */
+  color: #dcddde;           /* texte clair */
 }
 
 /* Colonne de gauche */
@@ -301,17 +329,20 @@ export default {
   padding: 15px;
   overflow-y: auto;
 }
+
 .left-panel h1,
 .left-panel h2,
 .left-panel h3 {
   color: #fff;
   margin-bottom: 15px;
 }
+
 .left-panel ul {
   list-style: none;
   margin: 0;
   padding: 0;
 }
+
 .left-panel li {
   padding: 6px 10px;
   margin-bottom: 5px;
@@ -321,16 +352,20 @@ export default {
   transition: background-color 0.2s;
 }
 .left-panel li:hover {
-  background-color: #393c43;
+  background-color: #393c43; /* un peu plus clair au survol */
 }
 .left-panel li.selected {
-  background-color: #5865F2;
+  background-color: #5865F2; /* sur la room sélectionnée */
 }
+
+/* Pour un petit bloc d’ajout de room */
 .add-room {
   margin-top: 10px;
   display: flex;
   gap: 5px;
 }
+
+/* Section de mise à jour du serveur */
 .update-server-section {
   margin-top: 20px;
   display: flex;
@@ -340,11 +375,12 @@ export default {
 
 /* Colonne du milieu */
 .middle-panel {
-  flex: 1;
+  flex: 1; /* occupe l'espace central */
   background-color: #36393f;
   padding: 20px;
   color: #dcddde;
 }
+
 .no-room-selected {
   display: flex;
   justify-content: center;
@@ -352,6 +388,7 @@ export default {
   height: 100%;
   color: #aaa;
 }
+
 .room-edit-content {
   display: flex;
   flex-direction: column;
@@ -369,26 +406,30 @@ export default {
   padding: 10px;
   overflow-y: auto;
 }
+
 .right-panel h3 {
   color: #fff;
   margin-bottom: 10px;
 }
+
 .right-panel ul {
   list-style: none;
   margin: 0;
   padding: 0;
 }
+
 .right-panel li {
   margin-bottom: 6px;
   color: #fff;
 }
 .right-panel li.admin {
-  color: yellow;
+  color: yellow; /* si l’utilisateur est admin */
   font-weight: bold;
 }
 
-/* Boutons généraux */
-.btn-primary, .btn-danger {
+/* Boutons */
+.btn-primary,
+.btn-danger {
   border: none;
   border-radius: 4px;
   padding: 8px 16px;
@@ -396,6 +437,8 @@ export default {
   transition: background-color 0.2s;
   font-size: 14px;
 }
+
+/* Bouton principal (bleu Discord) */
 .btn-primary {
   background-color: #5865F2;
   color: #fff;
@@ -403,6 +446,8 @@ export default {
 .btn-primary:hover {
   background-color: #4752c4;
 }
+
+/* Bouton danger (rouge) */
 .btn-danger {
   background-color: #f04747;
   color: #fff;
@@ -411,21 +456,21 @@ export default {
   background-color: #ce3c3c;
 }
 
-/* Modale Overlay */
+/* Overlay de modale (fond gris transparent) */
 .modal-overlay {
   position: fixed;
-  top: 0;
+  top: 0; 
   left: 0;
-  width: 100vw;
+  width: 100vw; 
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 900;
 }
 
-/* Modale d'invitation */
+/* Modale d’invitation (ou autres modales) */
 .invite-modal {
   position: fixed;
-  top: 50%;
+  top: 50%; 
   left: 50%;
   transform: translate(-50%, -50%);
   background-color: #36393f;
@@ -435,11 +480,13 @@ export default {
   z-index: 1000;
   width: 320px;
 }
+
 .invite-modal h3 {
   color: #fff;
   margin-bottom: 15px;
   text-align: center;
 }
+
 .invite-modal input {
   width: 100%;
   padding: 10px;
@@ -450,6 +497,7 @@ export default {
   color: #dcddde;
   font-size: 14px;
 }
+
 .invite-modal ul {
   list-style: none;
   padding: 0;
@@ -459,6 +507,7 @@ export default {
   border: 1px solid #555;
   border-radius: 4px;
 }
+
 .invite-modal li {
   padding: 8px;
   cursor: pointer;
@@ -471,35 +520,16 @@ export default {
 .invite-modal li:hover {
   background-color: #4752c4;
 }
+
 .modal-btn {
   width: 100%;
   margin-top: 5px;
 }
 
-.edit-btn {
-  margin-left: 10px;
-  background-color: transparent;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  font-size: 16px;
-}
-.edit-btn:hover {
-  color: #aaa;
-}
-
-/* Modale overlay */
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background-color: rgba(0,0,0,0.5);
-  z-index: 900;
-}
-
+/* Édition de la room dans une modale */
 .room-edit-panel {
   position: fixed;
-  top: 50%;
+  top: 50%; 
   left: 50%;
   transform: translate(-50%, -50%);
   background-color: #36393f;
@@ -532,11 +562,18 @@ export default {
   justify-content: space-between;
   gap: 10px;
 }
-.buttons {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
 
+/* Optionnel : un petit bouton “edit” discret */
+.edit-btn {
+  margin-left: 10px;
+  background-color: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+}
+.edit-btn:hover {
+  color: #aaa;
+}
 
 </style>
