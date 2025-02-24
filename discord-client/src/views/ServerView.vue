@@ -9,7 +9,8 @@
       <button class="btn-danger" style="margin-top: 20px;" @click="leaveCurrentServer">
         Quitter le serveur
       </button>
-      <button class="btn-danger" style="margin-top: 20px;" @click="deleteServer">
+      <button v-for="user in serverStore.serverUsers.filter(u => u.admin)"
+        :key="user.user.id" class="btn-danger" style="margin-top: 20px;" @click="deleteServer">
         Supprimer le serveur
       </button>
 
