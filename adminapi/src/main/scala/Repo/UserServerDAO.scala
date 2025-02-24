@@ -42,9 +42,7 @@ object UserServerDAO{
 
             userServer.admin match{
                 case Some(value) => statement.setBoolean(3, value)
-                case None => 
-                    println("Error, admin is null") 
-                    false
+                case None => statement.setBoolean(3, false)
             }
 
             val rowsInserted = statement.executeUpdate()
@@ -202,5 +200,33 @@ object UserServerDAO{
 
         updated
     }
+
+    def getAllUserNotFromServer(server_id: Int): Future[List[User]] = Future{
+        val connection = DatabaseConfig.getConnection
+        val query = "SELECT u.* FROM USER u WHERE u.deleted = false AND u.id NOT IN (SELECT su.user_id FROM SERVER_USER su WHERE su.server_id = ?);"
+        val users = ListBuffer[User]()
+
+        try {
+            val statement: PreparedStatement = connection.prepareStatement(query)
+            statement.setInt(1, server_id)
+            val resultSet: ResultSet = statement.executeQuery()
+
+            while (resultSet.next()) {
+                 users += User(
+                Some(resultSet.getInt("id")),
+                resultSet.getString("username"),
+                resultSet.getString("password"),
+                Some(resultSet.getBoolean("deleted")),
+        )
+      }
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+    } finally {
+      connection.close()
+    }
+
+        users.toList
+  }
 
 }

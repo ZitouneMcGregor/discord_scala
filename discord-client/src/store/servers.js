@@ -76,7 +76,7 @@ export const useServerStore = defineStore('servers', {
           `http://localhost:8080/server/${serverId}/userServer`,
           {
             user_id: userId,
-            server_id: serverId
+            server_id: serverId,
           }
         );
         if (response.status === 201) {
@@ -129,7 +129,8 @@ export const useServerStore = defineStore('servers', {
         console.log(this.serverUsers)
       } catch (error) {
         console.error('Erreur fetchServerUsers', error);
-     },
+     }
+    },
 
     async deleteServer(serverId) {
       try {
@@ -144,3 +145,4 @@ export const useServerStore = defineStore('servers', {
     }
   }
 });
+

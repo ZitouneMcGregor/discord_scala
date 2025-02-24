@@ -27,8 +27,9 @@ import scala.util.{Success, Failure}
 case class UserWithAdmin(user: User, admin: Boolean)
 
 trait UserJsonFormats extends DefaultJsonProtocol {
-  implicit val userFormat: RootJsonFormat[User] = jsonFormat4(User.apply)
-  implicit val userListFormat: RootJsonFormat[UserWithAdmin] = jsonFormat2(UserWithAdmin.apply)
+  given userFormat: RootJsonFormat[User] = jsonFormat4(User.apply)
+  given userListFormat: RootJsonFormat[UserWithAdmin] = jsonFormat2(UserWithAdmin.apply)
+  given userListFormat2: RootJsonFormat[List[User]] = listFormat(userFormat)
 }
 
 object UserRoutes extends UserJsonFormats {
@@ -105,14 +106,14 @@ object UserRoutes extends UserJsonFormats {
           case Failure(ex) =>
             complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
         }
-      } ~
-    pathPrefix("server" / IntNumber / "invite") { id_server =>
+      }} ~
+      pathPrefix("server" / IntNumber / "invite") { id_server =>
       get {
       complete(UserServerDAO.getAllUserNotFromServer(id_server))
+      }
 
     }
 
   }
     }
-  }
-}
+  

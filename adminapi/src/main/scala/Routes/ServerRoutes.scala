@@ -49,7 +49,6 @@ object ServerRoutes extends ServerJsonFormats {
                 }
             }
         } ~
-
           get {
             complete(ServerDAO.getAllServer)
           }
