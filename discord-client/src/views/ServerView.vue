@@ -4,7 +4,9 @@
     <div class="left-panel">
       <h1>Serveur</h1>
       <button class="btn-primary" @click="openInviteModal">Inviter des gens</button>
-      
+
+      <button class="btn-primary" @click="openAdminModal">Gerer les admins</button>
+
       <!-- Boutons quitter/supprimer le serveur -->
       <button class="btn-danger" style="margin-top: 20px;" @click="leaveCurrentServer">
         Quitter le serveur
@@ -69,6 +71,22 @@
           </li>
         </ul>
         <button class="btn-primary modal-btn" @click="addUserOnServer">Inviter</button>
+      </div>
+    </div>
+
+    <!-- Modale de gestion d'admin -->
+    <div v-if="showAdminModal">
+      <!-- Overlay -->
+      <div class="modal-overlay" @click="closeAdminModal"></div>
+      <!-- Contenu de la modale -->
+      <div class="invite-modal">
+        <h3>Gerer les admins</h3>
+        <ul>
+          <li v-for="user in serverStore.serverUsers" :key="user.user.id">
+            {{ user.user.username }} ({{ user.admin ? 'Admin' : 'Membre' }})
+          </li>
+        </ul>
+        <!-- Liste dynamique des utilisateurs filtrés -->
       </div>
     </div>
 
@@ -144,6 +162,8 @@ export default {
 
     // Gestion de la modale d'invitation
     const showInviteModal = ref(false)
+    const showAdminModal = ref(false)
+
     const inviteInput = ref('')
     const selectedUser = ref(null)
 
@@ -162,8 +182,19 @@ export default {
       userStore.fetchInviteUsers(Number(serverId))
     }
     
+    function openAdminModal() {
+      showAdminModal.value = true
+      userStore.fetchUsersServer(Number(serverId))
+    }
+    
     function closeInviteModal() {
       showInviteModal.value = false
+      inviteInput.value = ''
+      selectedUser.value = null
+    }
+    
+    function closeAdminModal() {
+      showAdminModal.value = false
       inviteInput.value = ''
       selectedUser.value = null
     }
@@ -282,12 +313,15 @@ export default {
 
       // Modale d'invitation
       showInviteModal,
+      showAdminModal,
       inviteInput,
       selectedUser,
       filteredUsers,
 
       openInviteModal,
+      openAdminModal,
       closeInviteModal,
+      closeAdminModal,
       selectUser,
       addUserOnServer,
 
