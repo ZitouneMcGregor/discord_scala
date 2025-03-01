@@ -16,13 +16,15 @@ import org.apache.pekko.http.cors.scaladsl.model.HttpOriginMatcher
 import org.apache.pekko.http.scaladsl.model.HttpMethods._
 import org.apache.pekko.http.cors.scaladsl.model.HttpHeaderRange
 import scala.collection.immutable.Seq
-
+import models.User
 import scala.util.{Success, Failure}
 
 
 trait UserServerJsonFormats extends DefaultJsonProtocol{
+    given userFormat: RootJsonFormat[User] = jsonFormat4(User.apply)
     given userServerFormat:RootJsonFormat[UserServer] = jsonFormat4(UserServer.apply)
 }
+
 
 object UserServerRoutes extends UserServerJsonFormats{
 
@@ -53,6 +55,12 @@ object UserServerRoutes extends UserServerJsonFormats{
 
                             }
 
+                        }
+                    } ~
+                    get {
+                        onComplete(UserServerDAO.getAllUserFromServer(id_server)) {
+                            case Success(users) => complete(StatusCodes.OK -> users.toJson.toString)
+                            case Failure(ex) => complete(StatusCodes.InternalServerError -> s"An error occurred: ${ex.getMessage}")
                         }
                     } ~
                     delete{
