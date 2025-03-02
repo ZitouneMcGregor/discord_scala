@@ -62,9 +62,9 @@ export const useAuthStore = defineStore('auth', {
                 localStorage.setItem('user', JSON.stringify(this.user));
                 return true;
               }else if (response.data.success === false) {
-                console.error('Erreur updateUser', response.data.description);
-              }
                 return false;
+
+              }
             } catch (error) {
               console.error('Erreur updateUser', error);
             }
@@ -77,6 +77,8 @@ export const useAuthStore = defineStore('auth', {
                 this.user = null;
                 localStorage.removeItem('user');
                 return true;
+              }else{
+                return false;
               }
             } catch (error) {
               console.error('Erreur deleteAccount', error);
@@ -86,7 +88,7 @@ export const useAuthStore = defineStore('auth', {
         async getUser(username) {
             try {
                 const response = await axios.get(`http://localhost:8080/users/${username}`); // Assurez-vous que l'URL est correcte ici
-                if (response.data.sucess === true) {
+                if (response.status === 200) {
                     return response.data; // L'utilisateur retourné contient un champ "deleted"
                 } else {
                     throw new Error('Utilisateur introuvable');

@@ -83,7 +83,7 @@ object UserRegistry {
   
 
   def dbDeleteUser(xa: Transactor, username: String): Unit = {
-    sql"DELETE FROM users  WHERE username = ${username}".
+    sql"UPDATE users SET deleted = true WHERE username = $username".
       update.
       run.
       transact(xa).
