@@ -43,6 +43,7 @@ const handleSubmit = async () => {
     const success = await authStore.login(username.value, password.value);
     if (success) {
       const user = await authStore.getUser(username.value); 
+      console.log(user);
       if (user && !user.deleted) {
         router.push('/home');
       } else {

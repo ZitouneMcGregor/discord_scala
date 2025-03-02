@@ -4,7 +4,7 @@ import axios from 'axios';
 export const useUserStore = defineStore('users', {
   state: () => ({
     allUsers: [],
-    inviteUsers: [] // Nouveau state pour les utilisateurs d'invite
+    inviteUsers: [] 
   }),
   actions: {
     async fetchAllUsers() {

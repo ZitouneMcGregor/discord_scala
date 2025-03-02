@@ -51,7 +51,7 @@ export default {
         newUsername.value = '';
         newPassword.value = '';
       } else {
-        alert('Erreur lors de la mise à jour du profil');
+        alert("Erreur nom d'utilisateur déjà pris");
       }
     }
 
