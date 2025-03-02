@@ -34,19 +34,17 @@ export const useAuthStore = defineStore('auth', {
             try {
                 const response = await axios.post('http://localhost:8080/users', { username, password });
         
-                if (response.status === 201) {
+                if (response.data.success === true) {
                     return { success: true, message: "Inscription réussie !" };
+                }else if (response.data.success === false) {
+                    return { success: false, message: response.data.description };
                 }
         
                 return { success: false, message: "Réponse inattendue du serveur." };
         
             } catch (error) {
                 if (error.response) {
-                    if (error.response.status === 409) {
-                        return { success: false, message: "Désolé, ce nom d'utilisateur est déjà pris." };
-                    } else if (error.response.status === 500) {
-                        return { success: false, message: "Erreur interne du serveur. Réessayez plus tard." };
-                    }
+                 return { success: false, message: "Erreur interne du serveur. Réessayez plus tard." }
                 }
         
                 return { success: false, message: "Problème de connexion. Vérifiez votre réseau." };
@@ -59,11 +57,14 @@ export const useAuthStore = defineStore('auth', {
                 username: newUsername,
                 password: newPassword
               });
-              if (response.status === 200) {
+              if (response.data.success === true) {
                 this.user.username = newUsername;
                 localStorage.setItem('user', JSON.stringify(this.user));
                 return true;
+              }else if (response.data.success === false) {
+                console.error('Erreur updateUser', response.data.description);
               }
+                return false;
             } catch (error) {
               console.error('Erreur updateUser', error);
             }
@@ -72,7 +73,7 @@ export const useAuthStore = defineStore('auth', {
         async deleteAccount(userName) {
             try {
               const response = await axios.delete(`http://localhost:8080/users/${userName}`);
-              if (response.status === 200) {
+              if (response.data.success === true) {
                 this.user = null;
                 localStorage.removeItem('user');
                 return true;
@@ -85,7 +86,7 @@ export const useAuthStore = defineStore('auth', {
         async getUser(username) {
             try {
                 const response = await axios.get(`http://localhost:8080/users/${username}`); // Assurez-vous que l'URL est correcte ici
-                if (response.status === 200) {
+                if (response.data.sucess === true) {
                     return response.data; // L'utilisateur retourné contient un champ "deleted"
                 } else {
                     throw new Error('Utilisateur introuvable');

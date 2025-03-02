@@ -1,3 +1,4 @@
+
 DROP DATABASE IF EXISTS AdminDiscord;
 
 CREATE DATABASE AdminDiscord;
@@ -46,3 +47,6 @@ CREATE TABLE SERVER_USER(
     FOREIGN KEY (server_id) REFERENCES SERVER(id) ON DELETE CASCADE,
     UNIQUE(user_id, server_id)
 );
+
+
+

@@ -1,30 +1,32 @@
-sbt project compiled with Scala 3
-Usage
+This is an example Akka HTTP application that works with PostgreSQL on Clever Cloud.
 
-Ce projet implémente l'API REST de la partie admin de notre application. L'API utilise Pekko HTTP et les Futures pour la gestion asynchrone, et implémente les opérations CRUD (Create, Read, Update, Delete) sur la base de données admin.
-Prérequis
+# Features
+Project generated from Akka Github [quick start template](https://github.com/akka/akka-http-quickstart-scala.g8).
 
-    Java 11 ou supérieur
-    sbt (Scala Build Tool) installé
-    Scala 3
+This service provides the ability to manage a simple in-memory user registry exposing 4 routes:
+- List all users
+- Get a specific user
+- Create a user
+- Delete a user
 
-Compilation et Exécution
+A thorough  description of the cURL commands may be found [here](https://developer.lightbend.com/guides/akka-http-quickstart-scala/#cURL-commands)
 
-Pour compiler le projet :
+A few functionalities have been added on top of the original example:
+- store the registry into a PostgreSQL database
+- read database parameters from  Clever Cloud standard environment variables
+- add basic authentication (`foo:bar`)
 
-sbt compile
+# Configuration
+Configuration parameters are located in the [application.conf](src/main/resources/application.conf)
+You can edit parameters for
+- basic-auth
+- PostgreSQL database
 
-Pour exécuter l'application :
+# Database creation
+The program uses [Flyway sbt plugin](https://github.com/flyway/flyway-sbt) in order to create the database table automatically.
+It requires a hook run before the program starts. Just set in the application environment the variable `CC_PRE_RUN_HOOK` with the value `sbt flywayMigrate`
 
-sbt run
+# Installation
+To install it, simply fork this repository and create an application from your GitHub repo. Then create a PostgreSQL add-on and link it to your application, either via the Clever Tools CLI or via the Clever Cloud console.
 
-L'API sera exposée sur le port 8080 (modifiable via la configuration ou une variable d'environnement).
-
-Technologies Utilisées
-
-    Scala 3
-    sbt
-    Pekko HTTP (pour l'API REST)
-    Futures (pour la gestion asynchrone)
-    HikariCP (gestion du pool de connexions)
-   
+That's it, the application will use the environment variables to connect to the PostgreSQL DB.
