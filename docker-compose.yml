@@ -1,38 +1,37 @@
-version: '3.8'
-
-services:
-  mysql:
-    image: mysql:8.0
-    container_name: adminbdd
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: "1234567aA*"  
-      MYSQL_DATABASE: "AdminDiscord"       
-    ports:
-      - "3336:3306"
-    volumes:
-      - ./bdd_mysql.sql:/docker-entrypoint-initdb.d/bdd.sql
-      - data:/var/lib/mysql
-
-volumes:
-  data:
-
 #version: '3.8'
 
 #services:
-  #postgres:
-    #image: postgres:15
-    #container_name: adminbdd
+#  mysql:
+ #   image: mysql:8.0
+   # container_name: adminbdd
     #restart: always
     #environment:
-      #POSTGRES_USER: "admin"
-      #POSTGRES_PASSWORD: "1234567aA*"
-      #POSTGRES_DB: "AdminDiscord"
+      #MYSQL_ROOT_PASSWORD: "1234567aA*"  
+      #MYSQL_DATABASE: "AdminDiscord"       
     #ports:
-      #- "5432:5432"
+     # - "3336:3306"
     #volumes:
-      #- ./bdd_postgres.sql:/docker-entrypoint-initdb.d/bdd.sql
-      #- pgdata:/var/lib/postgresql/data
+     # - ./bdd_mysql.sql:/docker-entrypoint-initdb.d/bdd.sql
+      #- data:/var/lib/mysql
 
 #volumes:
-  #pgdata:
+ # data:
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: adminbdd
+    restart: always
+    environment:
+      POSTGRES_USER: "admin"
+      POSTGRES_PASSWORD: "1234567aA*"
+      POSTGRES_DB: "AdminDiscord"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./bdd_postgres.sql:/docker-entrypoint-initdb.d/bdd.sql
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
