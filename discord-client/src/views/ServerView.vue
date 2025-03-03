@@ -4,7 +4,7 @@
     <div class="left-panel">
       <h1>Serveur</h1>
       <button class="btn-primary" @click="openInviteModal">Inviter des gens</button>
-      
+
       <!-- Boutons quitter/supprimer le serveur -->
       <button class="btn-danger" style="margin-top: 20px;" @click="leaveCurrentServer">
         Quitter le serveur
@@ -30,76 +30,75 @@
         <button class="btn-primary" @click="addRoom">Ajouter</button>
       </div>
 
-      <!-- Formulaire de mise à jour du serveur -->
-      <div class="update-server-section" style="margin-top: 20px;">
-        <h3>Modifier le serveur</h3>
-        <input
-          v-model="updatedServerName"
-          placeholder="Nouveau nom du serveur"
-        />
-        <input
-          v-model="updatedServerImage"
-          placeholder="Nouvelle URL d'image"
-        />
-        <button class="btn-primary" @click="updateServerInfo">
-          Mettre à jour
-        </button>
-      </div>
-    </div>
+      <!-- Bouton d'ouverture du modal -->
+      <button class="btn-primary" @click="openEditServerModal" style="margin-top: 20px;">
+        Modifier le serveur
+      </button>
 
-    <!-- Modale d'invitation -->
-    <div v-if="showInviteModal">
-      <!-- Overlay -->
-      <div class="modal-overlay" @click="closeInviteModal"></div>
-      <!-- Contenu de la modale -->
-      <div class="invite-modal">
-        <h3>Inviter des gens</h3>
-        <input 
-          v-model="inviteInput" 
-          placeholder="Entrez l'username de la personne à inviter"
-        />
-        <!-- Liste dynamique des utilisateurs filtrés -->
-        <ul v-if="filteredUsers.length">
-          <li 
-            v-for="user in filteredUsers" 
-            :key="user.id"
-            @click="selectUser(user)"
-          >
-            {{ user.username }}
-          </li>
-        </ul>
-        <button class="btn-primary modal-btn" @click="addUserOnServer">Inviter</button>
+      <!-- Modale d'édition du serveur -->
+      <div v-if="showEditServerModal">
+        <div class="modal-overlay" @click="closeEditServerModal"></div>
+        <div class="editserv-modal">
+          <h3>Modifier le serveur</h3>
+          <input v-model="updatedServerName" placeholder="Nouveau nom du serveur" />
+          <input v-model="updatedServerImage" placeholder="Nouvelle URL d'image" />
+          <button class="btn-primary modal-btn" @click="updateServerInfo">Mettre à jour</button>
+        </div>
+      </div>
+
+      <!-- Modale d'invitation -->
+      <div v-if="showInviteModal">
+        <!-- Overlay -->
+        <div class="modal-overlay" @click="closeInviteModal"></div>
+        <!-- Contenu de la modale -->
+        <div class="invite-modal">
+          <h3>Inviter des gens</h3>
+          <input
+            v-model="inviteInput"
+            placeholder="Entrez l'username de la personne à inviter"
+          />
+          <!-- Liste dynamique des utilisateurs filtrés -->
+          <ul v-if="filteredUsers.length">
+            <li
+              v-for="user in filteredUsers"
+              :key="user.id"
+              @click="selectUser(user)"
+            >
+              {{ user.username }}
+            </li>
+          </ul>
+          <button class="btn-primary modal-btn" @click="addUserOnServer">Inviter</button>
+        </div>
       </div>
     </div>
 
     <!-- Colonne du milieu -->
     <div class="middle-panel">
       <div class="right-panel">
-      <div v-if="!selectedRoom" class="no-room-selected">
-        <p>Sélectionnez une room pour la modifier ou la supprimer</p>
-      </div>
-      <div v-else>
-        <!-- Overlay pour fermer la modale d'édition -->
-        <div class="modal-overlay" @click="selectedRoom = null"></div>
-        <div class="room-edit-panel">
-          <h3>Modifier la room : {{ selectedRoom.name }}</h3>
-          <input 
-            v-model="editRoomName"
-            placeholder="Nouveau nom de la room"
-          />
-          <div class="buttons">
-            <button class="btn-primary" @click="updateSelectedRoom">
-              Enregistrer
-            </button>
-            <button class="btn-danger" @click="deleteSelectedRoom">
-              Supprimer
-            </button>
+        <div v-if="!selectedRoom" class="no-room-selected">
+          <p>Sélectionnez une room pour la modifier ou la supprimer</p>
+        </div>
+        <div v-else>
+          <!-- Overlay pour fermer la modale d'édition -->
+          <div class="modal-overlay" @click="selectedRoom = null"></div>
+          <div class="room-edit-panel">
+            <h3>Modifier la room : {{ selectedRoom.name }}</h3>
+            <input
+              v-model="editRoomName"
+              placeholder="Nouveau nom de la room"
+            />
+            <div class="buttons">
+              <button class="btn-primary" @click="updateSelectedRoom">
+                Enregistrer
+              </button>
+              <button class="btn-danger" @click="deleteSelectedRoom">
+                Supprimer
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
-    </div>
-          
 
     <!-- Colonne de droite -->
     <div class="right-panel">
@@ -114,7 +113,7 @@
         </li>
       </ul>
     </div>
-    </div>
+  </div>
 </template>
 
 <script>
@@ -142,12 +141,35 @@ export default {
     const updatedServerName = ref('')
     const updatedServerImage = ref('')
 
+    const roomToEdit = ref(null)
+    const showRoomModal = ref(false)
+
+    // Modale serveur
+    const showEditServerModal = ref(false)
+    function openEditServerModal() {
+      updatedServerName.value = serverStore.server?.name || ''
+      updatedServerImage.value = serverStore.server?.image || ''
+      showEditServerModal.value = true
+    }
+
+    function closeEditServerModal() {
+      showEditServerModal.value = false
+    }
+
+    async function updateServerInfo() {
+      if (!updatedServerName.value.trim() && !updatedServerImage.value.trim()) return
+      await serverStore.updateServer({
+        id: Number(serverId),
+        name: updatedServerName.value.trim(),
+        image: updatedServerImage.value.trim()
+      })
+      closeEditServerModal()
+    }
+
     // Gestion de la modale d'invitation
     const showInviteModal = ref(false)
     const inviteInput = ref('')
     const selectedUser = ref(null)
-
-    const showRoomModal = ref(false)
 
     // Filtre des utilisateurs pour l'invitation
     const filteredUsers = computed(() => {
@@ -161,7 +183,7 @@ export default {
       showInviteModal.value = true
       userStore.fetchInviteUsers(Number(serverId))
     }
-    
+
     function closeInviteModal() {
       showInviteModal.value = false
       inviteInput.value = ''
@@ -222,33 +244,25 @@ export default {
     }
 
     async function updateSelectedRoom() {
-      if (!roomToEdit.value) return
+      if (!selectedRoom.value) return
       await roomStore.updateRoom({
-        serverId: roomToEdit.value.id_server, // ou autre ID
-        roomId: roomToEdit.value.id,
+        serverId: selectedRoom.value.id_server, // ou autre ID
+        roomId: selectedRoom.value.id,
         newName: editRoomName.value.trim()
       })
       // Mettre à jour localement
-      roomToEdit.value.name = editRoomName.value.trim()
-      // Si c’est la même room que selectedRoom, on met aussi à jour
-      if (selectedRoom.value && selectedRoom.value.id === roomToEdit.value.id) {
-        selectedRoom.value.name = editRoomName.value.trim()
-      }
+      selectedRoom.value.name = editRoomName.value.trim()
       closeRoomModal()
     }
 
     async function deleteSelectedRoom() {
-      if (!roomToEdit.value) return
-      await roomStore.deleteRoom(roomToEdit.value.id_server, roomToEdit.value.id)
+      if (!selectedRoom.value) return
+      await roomStore.deleteRoom(selectedRoom.value.id_server, selectedRoom.value.id)
       // Refresh la liste
-      await roomStore.fetchRooms(roomToEdit.value.id_server)
-      // Si on supprimait la selectedRoom
-      if (selectedRoom.value && selectedRoom.value.id === roomToEdit.value.id) {
-        selectedRoom.value = null
-      }
+      await roomStore.fetchRooms(selectedRoom.value.id_server)
+      selectedRoom.value = null
       closeRoomModal()
     }
-
 
     // Quitter le serveur
     async function leaveCurrentServer() {
@@ -262,16 +276,6 @@ export default {
       router.push('/home')
     }
 
-    // Mettre à jour les infos du serveur
-    async function updateServerInfo() {
-      if (!updatedServerName.value.trim() && !updatedServerImage.value.trim()) return
-      await serverStore.updateServer({
-        id: Number(serverId),
-        name: updatedServerName.value.trim(),
-        image: updatedServerImage.value.trim()
-      })
-    }
-
     return {
       serverId,
       selectedRoom,
@@ -279,6 +283,11 @@ export default {
       editRoomName,
       updatedServerName,
       updatedServerImage,
+
+      // Modale modifier serveur
+      showEditServerModal,
+      openEditServerModal,
+      closeEditServerModal,
 
       // Modale d'invitation
       showInviteModal,
@@ -460,18 +469,19 @@ export default {
 /* Overlay de modale (fond gris transparent) */
 .modal-overlay {
   position: fixed;
-  top: 0; 
+  top: 0;
   left: 0;
-  width: 100vw; 
+  width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 900;
 }
 
 /* Modale d’invitation (ou autres modales) */
-.invite-modal {
+.invite-modal,
+.editserv-modal {
   position: fixed;
-  top: 50%; 
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   background-color: #36393f;
@@ -482,13 +492,15 @@ export default {
   width: 320px;
 }
 
-.invite-modal h3 {
+.invite-modal h3,
+.editserv-modal h3 {
   color: #fff;
   margin-bottom: 15px;
   text-align: center;
 }
 
-.invite-modal input {
+.invite-modal input,
+.editserv-modal input {
   width: 100%;
   padding: 10px;
   margin-bottom: 15px;
@@ -530,7 +542,7 @@ export default {
 /* Édition de la room dans une modale */
 .room-edit-panel {
   position: fixed;
-  top: 50%; 
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   background-color: #36393f;
