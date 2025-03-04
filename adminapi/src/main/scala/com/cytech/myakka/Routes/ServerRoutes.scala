@@ -28,7 +28,7 @@ trait ServerJsonFormats extends DefaultJsonProtocol {
 }
 
 
-class ServerRoutes(serverRegistry: ActorRef[ServerRegistry.Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends ServerJsonFormats, UserJsonFormats {
+class ServerRoutes(serverRegistry: ActorRef[ServerRegistry.Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends ServerJsonFormats {
   private given Timeout = Timeout.create(system.settings.config.getDuration("app.routes.ask-timeout"))
 
   def getServers(): Future[Servers] = 
@@ -46,11 +46,10 @@ class ServerRoutes(serverRegistry: ActorRef[ServerRegistry.Command], auth: Basic
          authenticateBasic(realm = "secure  site", myUserPassAuthenticator) { _ =>
             concat(
                 pathEnd {
-                    concat(
                         get {
                             complete(getServers())
-                        },
-                    )
+                        }
+                    
                 }
             )
          }
