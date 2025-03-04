@@ -17,7 +17,6 @@ import org.apache.pekko.http.cors.scaladsl.CorsDirectives._
 import spray.json.*
 import spray.json.DefaultJsonProtocol._
 import com.cytech.myakka.configuration.BasicAuthConfig
-import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport.*
 
 
 
