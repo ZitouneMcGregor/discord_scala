@@ -10,6 +10,8 @@ import com.cytech.myakka.registery.*
 import com.cytech.myakka.routes.*
 import scala.util.Failure
 import scala.util.Success
+import org.apache.pekko.http.scaladsl.server.Directives._enhanceRouteWithConcatenation
+import org.apache.pekko.http.scaladsl.server.RouteConcatenation._enhanceRouteWithConcatenation
 
 //#main-class
 object QuickstartApp {
@@ -38,10 +40,19 @@ object QuickstartApp {
     //#server-bootstrapping
     val rootBehavior = Behaviors.setup[Nothing] { context =>
       val userRegistryActor = context.spawn(UserRegistry(pgConfig), "UserRegistryActor")
-      context.watch(userRegistryActor)
+      val serverRegistryActor = context.spawn(ServerRegistry(pgConfig), "ServerRegistryActor")
+      val userServerRegistryActor = context.spawn(UserServerRegistry(pgConfig), "UserServerRegistryActor") 
+ 
 
+      context.watch(userRegistryActor)
+      context.watch(serverRegistryActor)
+      context.watch(userServerRegistryActor)
+      
       val routes = new UserRoutes(userRegistryActor, authConfig)(context.system)
-      startHttpServer(routes.userRoutes)(context.system)
+      val serverRoutes = new ServerRoutes(serverRegistryActor, authConfig)(context.system) 
+      val userServerRoutes = new UserServerRoutes(userServerRegistryActor, authConfig)(context.system) 
+
+      startHttpServer(routes.userRoutes ~ serverRoutes.serverRoutes ~ userServerRoutes.userServerRoutes)(context.system)
 
       Behaviors.empty
     }
