@@ -9,7 +9,7 @@ import doobie.implicits.*
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.cytech.myakka.configuration.PostgresConfig
-import com.cytech.myakka.routes.{User, Users} // Import new case classes
+import com.cytech.myakka.routes.{Server, Servers} // Import new case classes
 import doobie.postgres.sqlstate
 
 final case class UserServer(id: Option[Int], user_id: Int, server_id: Int, admin: Boolean)
@@ -23,7 +23,7 @@ object UserServerRegistry {
   final case class RemoveUser(serverId: Int, userId: Int, replyTo: ActorRef[ActionPerformed]) extends Command
   final case class UpdateAdmin(serverId: Int, userId: Int, admin: Boolean, replyTo: ActorRef[ActionPerformed]) extends Command
   // New command
-  final case class GetUsersNotInServer(serverId: Int, replyTo: ActorRef[Users]) extends Command
+  final case class GetAllServersFromUser(userId: Int, replyTo: ActorRef[Servers]) extends Command
 
   def apply(pgConfig: PostgresConfig): Behavior[Command] = {
     registry(transactor(pgConfig))
@@ -79,16 +79,16 @@ object UserServerRegistry {
       .unsafeRunSync()
   }
 
-  // New function to get users not in a server
-  def dbGetUsersNotInServer(xa: Transactor, serverId: Int): Users = {
-    Users(
+  // New function to get servers for a user
+  def dbGetAllServersFromUser(xa: Transactor, userId: Int): Servers = {
+    Servers(
       sql"""
-        SELECT id, username 
-        FROM users 
-        WHERE id NOT IN (SELECT user_id FROM server_user WHERE server_id = $serverId)
-        AND deleted = false
+        SELECT s.id, s.name 
+        FROM servers s
+        JOIN server_user su ON s.id = su.server_id
+        WHERE su.user_id = $userId
       """
-        .query[User]
+        .query[Server]
         .to[List]
         .transact(xa)
         .unsafeRunSync()
@@ -128,9 +128,9 @@ object UserServerRegistry {
         }
         Behaviors.same
 
-      // New case for users not in server
-      case GetUsersNotInServer(serverId, replyTo) =>
-        replyTo ! dbGetUsersNotInServer(xa, serverId)
+      // New case for servers from user
+      case GetAllServersFromUser(userId, replyTo) =>
+        replyTo ! dbGetAllServersFromUser(xa, userId)
         Behaviors.same
     }
 }

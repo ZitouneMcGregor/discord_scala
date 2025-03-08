@@ -19,16 +19,16 @@ import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport.*
 import scala.collection.immutable
 
 final case class UpdateAdminRequest(admin: Boolean)
-final case class User(id: Int, username: String) // New case class for users
-final case class Users(users: immutable.Seq[User]) // Wrapper for list of users
+final case class Server(id: Int, name: String) // Minimal Server case class
+final case class Servers(servers: immutable.Seq[Server]) // Wrapper for list of servers
 
 trait UserServerJsonFormats extends DefaultJsonProtocol {
   given userServerFormat: RootJsonFormat[UserServer] = jsonFormat4(UserServer.apply)
   given userServersFormat: RootJsonFormat[UserServers] = jsonFormat1(UserServers.apply)
   given actionPerformedFormat: RootJsonFormat[ActionPerformed] = jsonFormat2(ActionPerformed.apply)
   given updateAdminRequestFormat: RootJsonFormat[UpdateAdminRequest] = jsonFormat1(UpdateAdminRequest.apply)
-  given userFormat: RootJsonFormat[User] = jsonFormat2(User.apply) // JSON format for User
-  given usersFormat: RootJsonFormat[Users] = jsonFormat1(Users.apply) // JSON format for Users
+  given serverFormat: RootJsonFormat[Server] = jsonFormat2(Server.apply) // JSON format for Server
+  given serversFormat: RootJsonFormat[Servers] = jsonFormat1(Servers.apply) // JSON format for Servers
 }
 
 class UserServerRoutes(userServerRegistry: ActorRef[UserServerRegistry.Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends UserServerJsonFormats {
@@ -47,9 +47,9 @@ class UserServerRoutes(userServerRegistry: ActorRef[UserServerRegistry.Command],
   def updateAdmin(serverId: Int, userId: Int, admin: Boolean): Future[ActionPerformed] =
     userServerRegistry.ask(UpdateAdmin(serverId, userId, admin, _))
 
-  // New method to get users not in a server
-  def getUsersNotInServer(serverId: Int): Future[Users] =
-    userServerRegistry.ask(GetUsersNotInServer(serverId, _))
+  // New method to get servers for a user
+  def getAllServersFromUser(userId: Int): Future[Servers] =
+    userServerRegistry.ask(GetAllServersFromUser(userId, _))
 
   def myUserPassAuthenticator(credentials: Credentials): Option[String] = {
     credentials match {
@@ -59,51 +59,56 @@ class UserServerRoutes(userServerRegistry: ActorRef[UserServerRegistry.Command],
   }
 
   val userServerRoutes: Route = cors() {
-    pathPrefix("servers" / IntNumber / "users") { serverId =>
+    pathPrefix("servers") {
       authenticateBasic(realm = "secure site", myUserPassAuthenticator) { _ =>
         concat(
-          pathEnd {
+          pathPrefix(IntNumber / "users") { serverId =>
             concat(
-              get {
-                onSuccess(getUsers(serverId)) { users =>
-                  complete(StatusCodes.OK, users)
-                }
-              },
-              post {
-                entity(as[UserServer]) { userServer =>
-                  if (userServer.server_id != serverId) {
-                    complete(StatusCodes.BadRequest, "Server ID in path must match request body")
-                  } else {
-                    onSuccess(addUser(userServer)) { performed =>
-                      complete(if (performed.success) StatusCodes.Created else StatusCodes.BadRequest, performed)
+              pathEnd {
+                concat(
+                  get {
+                    onSuccess(getUsers(serverId)) { users =>
+                      complete(StatusCodes.OK, users)
+                    }
+                  },
+                  post {
+                    entity(as[UserServer]) { userServer =>
+                      if (userServer.server_id != serverId) {
+                        complete(StatusCodes.BadRequest, "Server ID in path must match request body")
+                      } else {
+                        onSuccess(addUser(userServer)) { performed =>
+                          complete(if (performed.success) StatusCodes.Created else StatusCodes.BadRequest, performed)
+                        }
+                      }
                     }
                   }
-                }
+                )
+              },
+              path(IntNumber) { userId =>
+                concat(
+                  delete {
+                    onSuccess(removeUser(serverId, userId)) { performed =>
+                      complete(if (performed.success) StatusCodes.OK else StatusCodes.BadRequest, performed)
+                    }
+                  },
+                  put {
+                    entity(as[UpdateAdminRequest]) { request =>
+                      onSuccess(updateAdmin(serverId, userId, request.admin)) { performed =>
+                        complete(if (performed.success) StatusCodes.OK else StatusCodes.BadRequest, performed)
+                      }
+                    }
+                  }
+                )
               }
             )
           },
-          path("not-in-server") { // New route
+          // New route for servers by user
+          path("users" / IntNumber) { userId =>
             get {
-              onSuccess(getUsersNotInServer(serverId)) { users =>
-                complete(StatusCodes.OK, users)
+              onSuccess(getAllServersFromUser(userId)) { servers =>
+                complete(StatusCodes.OK, servers)
               }
             }
-          },
-          path(IntNumber) { userId =>
-            concat(
-              delete {
-                onSuccess(removeUser(serverId, userId)) { performed =>
-                  complete(if (performed.success) StatusCodes.OK else StatusCodes.BadRequest, performed)
-                }
-              },
-              put {
-                entity(as[UpdateAdminRequest]) { request =>
-                  onSuccess(updateAdmin(serverId, userId, request.admin)) { performed =>
-                    complete(if (performed.success) StatusCodes.OK else StatusCodes.BadRequest, performed)
-                  }
-                }
-              }
-            )
           }
         )
       }
