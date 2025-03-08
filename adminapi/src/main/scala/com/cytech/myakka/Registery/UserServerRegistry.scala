@@ -9,6 +9,7 @@ import doobie.implicits.*
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.cytech.myakka.configuration.PostgresConfig
+import com.cytech.myakka.routes.{User, Users} // Import new case classes
 import doobie.postgres.sqlstate
 
 final case class UserServer(id: Option[Int], user_id: Int, server_id: Int, admin: Boolean)
@@ -21,6 +22,8 @@ object UserServerRegistry {
   final case class AddUser(userServer: UserServer, replyTo: ActorRef[ActionPerformed]) extends Command
   final case class RemoveUser(serverId: Int, userId: Int, replyTo: ActorRef[ActionPerformed]) extends Command
   final case class UpdateAdmin(serverId: Int, userId: Int, admin: Boolean, replyTo: ActorRef[ActionPerformed]) extends Command
+  // New command
+  final case class GetUsersNotInServer(serverId: Int, replyTo: ActorRef[Users]) extends Command
 
   def apply(pgConfig: PostgresConfig): Behavior[Command] = {
     registry(transactor(pgConfig))
@@ -76,6 +79,22 @@ object UserServerRegistry {
       .unsafeRunSync()
   }
 
+  // New function to get users not in a server
+  def dbGetUsersNotInServer(xa: Transactor, serverId: Int): Users = {
+    Users(
+      sql"""
+        SELECT id, username 
+        FROM users 
+        WHERE id NOT IN (SELECT user_id FROM server_user WHERE server_id = $serverId)
+        AND deleted = false
+      """
+        .query[User]
+        .to[List]
+        .transact(xa)
+        .unsafeRunSync()
+    )
+  }
+
   private def registry(xa: Transactor): Behavior[Command] =
     Behaviors.receiveMessage {
       case GetUsers(serverId, replyTo) =>
@@ -107,6 +126,11 @@ object UserServerRegistry {
         } else {
           replyTo ! ActionPerformed(false, s"User $userId not found in server $serverId")
         }
+        Behaviors.same
+
+      // New case for users not in server
+      case GetUsersNotInServer(serverId, replyTo) =>
+        replyTo ! dbGetUsersNotInServer(xa, serverId)
         Behaviors.same
     }
 }

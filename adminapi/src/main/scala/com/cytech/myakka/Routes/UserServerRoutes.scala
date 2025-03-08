@@ -16,14 +16,19 @@ import spray.json.*
 import spray.json.DefaultJsonProtocol.*
 import com.cytech.myakka.configuration.BasicAuthConfig
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport.*
+import scala.collection.immutable
 
 final case class UpdateAdminRequest(admin: Boolean)
+final case class User(id: Int, username: String) // New case class for users
+final case class Users(users: immutable.Seq[User]) // Wrapper for list of users
 
 trait UserServerJsonFormats extends DefaultJsonProtocol {
   given userServerFormat: RootJsonFormat[UserServer] = jsonFormat4(UserServer.apply)
   given userServersFormat: RootJsonFormat[UserServers] = jsonFormat1(UserServers.apply)
   given actionPerformedFormat: RootJsonFormat[ActionPerformed] = jsonFormat2(ActionPerformed.apply)
   given updateAdminRequestFormat: RootJsonFormat[UpdateAdminRequest] = jsonFormat1(UpdateAdminRequest.apply)
+  given userFormat: RootJsonFormat[User] = jsonFormat2(User.apply) // JSON format for User
+  given usersFormat: RootJsonFormat[Users] = jsonFormat1(Users.apply) // JSON format for Users
 }
 
 class UserServerRoutes(userServerRegistry: ActorRef[UserServerRegistry.Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends UserServerJsonFormats {
@@ -41,6 +46,10 @@ class UserServerRoutes(userServerRegistry: ActorRef[UserServerRegistry.Command],
 
   def updateAdmin(serverId: Int, userId: Int, admin: Boolean): Future[ActionPerformed] =
     userServerRegistry.ask(UpdateAdmin(serverId, userId, admin, _))
+
+  // New method to get users not in a server
+  def getUsersNotInServer(serverId: Int): Future[Users] =
+    userServerRegistry.ask(GetUsersNotInServer(serverId, _))
 
   def myUserPassAuthenticator(credentials: Credentials): Option[String] = {
     credentials match {
@@ -72,6 +81,13 @@ class UserServerRoutes(userServerRegistry: ActorRef[UserServerRegistry.Command],
                 }
               }
             )
+          },
+          path("not-in-server") { // New route
+            get {
+              onSuccess(getUsersNotInServer(serverId)) { users =>
+                complete(StatusCodes.OK, users)
+              }
+            }
           },
           path(IntNumber) { userId =>
             concat(
