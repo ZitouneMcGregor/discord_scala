@@ -9,7 +9,6 @@ import doobie.implicits.*
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.cytech.myakka.configuration.PostgresConfig
-import com.cytech.myakka.routes.{Server, Servers} // Import new case classes
 import doobie.postgres.sqlstate
 
 final case class UserServer(id: Option[Int], user_id: Int, server_id: Int, admin: Boolean)
@@ -23,7 +22,7 @@ object UserServerRegistry {
   final case class RemoveUser(serverId: Int, userId: Int, replyTo: ActorRef[ActionPerformed]) extends Command
   final case class UpdateAdmin(serverId: Int, userId: Int, admin: Boolean, replyTo: ActorRef[ActionPerformed]) extends Command
   // New command
-  final case class GetAllServersFromUser(userId: Int, replyTo: ActorRef[Servers]) extends Command
+  final case class GetUserInServer(serverId: Int, userId: Int, replyTo: ActorRef[Option[UserServer]]) extends Command
 
   def apply(pgConfig: PostgresConfig): Behavior[Command] = {
     registry(transactor(pgConfig))
@@ -79,20 +78,17 @@ object UserServerRegistry {
       .unsafeRunSync()
   }
 
-  // New function to get servers for a user
-  def dbGetAllServersFromUser(xa: Transactor, userId: Int): Servers = {
-    Servers(
-      sql"""
-        SELECT s.id, s.name 
-        FROM servers s
-        JOIN server_user su ON s.id = su.server_id
-        WHERE su.user_id = $userId
-      """
-        .query[Server]
-        .to[List]
-        .transact(xa)
-        .unsafeRunSync()
-    )
+  // New function to get a specific user's data in a server
+  def dbGetUserInServer(xa: Transactor, serverId: Int, userId: Int): Option[UserServer] = {
+    sql"""
+      SELECT id, user_id, server_id, admin 
+      FROM server_user 
+      WHERE server_id = $serverId AND user_id = $userId
+    """
+      .query[UserServer]
+      .option
+      .transact(xa)
+      .unsafeRunSync()
   }
 
   private def registry(xa: Transactor): Behavior[Command] =
@@ -128,9 +124,9 @@ object UserServerRegistry {
         }
         Behaviors.same
 
-      // New case for servers from user
-      case GetAllServersFromUser(userId, replyTo) =>
-        replyTo ! dbGetAllServersFromUser(xa, userId)
+      // New case for specific user in server
+      case GetUserInServer(serverId, userId, replyTo) =>
+        replyTo ! dbGetUserInServer(xa, serverId, userId)
         Behaviors.same
     }
 }
