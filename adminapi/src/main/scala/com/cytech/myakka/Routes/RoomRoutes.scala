@@ -49,19 +49,19 @@ class RoomRoutes(roomRegistry: ActorRef[RoomRegistry.Command], auth: BasicAuthCo
     }
   }
 
-  val roomRoutes: Route = cors() { // Enable CORS
+  val roomRoutes: Route = cors() { 
     pathPrefix("rooms") {
       authenticateBasic(realm = "secure site", myUserPassAuthenticator) { _ =>
         concat(
           pathEnd {
             concat(
               get {
-                complete(getRooms()) // Returns Rooms as JSON
+                complete(getRooms()) 
               },
               post {
                 entity(as[Room]) { room =>
                   onSuccess(createRoom(room)) { performed =>
-                    complete(StatusCodes.Created, performed) // 201 Created with ActionPerformed
+                    complete(StatusCodes.Created, performed) 
                   }
                 }
               }
@@ -72,19 +72,19 @@ class RoomRoutes(roomRegistry: ActorRef[RoomRegistry.Command], auth: BasicAuthCo
               get {
                 rejectEmptyResponse {
                   onSuccess(getRoom(roomId)) { response =>
-                    complete(response.maybeRoom) // Returns Room or 404 if not found
+                    complete(response.maybeRoom)
                   }
                 }
               },
               delete {
                 onSuccess(deleteRoom(roomId)) { performed =>
-                  complete(StatusCodes.OK, performed) // 200 OK with ActionPerformed
+                  complete(StatusCodes.OK, performed) 
                 }
               },
               put {
                 entity(as[Room]) { room =>
                   onSuccess(updateRoom(roomId, room)) { performed =>
-                    complete(StatusCodes.OK, performed) // 200 OK with ActionPerformed
+                    complete(StatusCodes.OK, performed)
                   }
                 }
               }
