@@ -11,6 +11,8 @@ import com.cytech.myakka.routes.{RoomRoutes, ServerRoutes, UserRoutes}
 import org.apache.pekko.http.scaladsl.server.RouteConcatenation._
 import scala.util.Failure
 import scala.util.Success
+import org.apache.pekko.http.scaladsl.server.Directives._enhanceRouteWithConcatenation
+import org.apache.pekko.http.scaladsl.server.RouteConcatenation._enhanceRouteWithConcatenation
 
 object QuickstartApp {
   private def startHttpServer(routes: Route)(implicit system: ActorSystem[_]): Unit = {
@@ -33,7 +35,7 @@ object QuickstartApp {
     val pgConfig = PostgresConfig(config)
     val authConfig = BasicAuthConfig(config)
 
-    // Bootstrap the server with UserRegistry, RoomRegistry, and ServerRegistry
+    // UserRegistry, RoomRegistry, and ServerRegistry
     val rootBehavior = Behaviors.setup[Nothing] { context =>
       context.log.info("Starting UserRegistry, RoomRegistry, and ServerRegistry")
       
@@ -58,3 +60,4 @@ object QuickstartApp {
     val system = ActorSystem[Nothing](rootBehavior, "HelloAkkaHttpServer")
   }
 }
+//#main-class
