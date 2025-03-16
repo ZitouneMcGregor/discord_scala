@@ -2,15 +2,15 @@
     "version": "1.4.0",
     "project": {
         "name": "adminapi-build-build",
-        "directory": "/data/discord_scala/adminapi/project/project",
-        "workspaceDir": "/data/discord_scala/adminapi/project/project",
+        "directory": "/home/cytech/scala/discord_scala/adminapi/project/project",
+        "workspaceDir": "/home/cytech/scala/discord_scala/adminapi/project/project",
         "sources": [
-            "/data/discord_scala/adminapi/project/project/src/main/scala",
-            "/data/discord_scala/adminapi/project/project/src/main/scala-2.12",
-            "/data/discord_scala/adminapi/project/project/src/main/scala-2",
-            "/data/discord_scala/adminapi/project/project/src/main/java",
-            "/data/discord_scala/adminapi/project/project/src/main/scala-sbt-1.0",
-            "/data/discord_scala/adminapi/project/project/target/scala-2.12/sbt-1.0/src_managed/main"
+            "/home/cytech/scala/discord_scala/adminapi/project/project/src/main/scala",
+            "/home/cytech/scala/discord_scala/adminapi/project/project/src/main/scala-2.12",
+            "/home/cytech/scala/discord_scala/adminapi/project/project/src/main/scala-2",
+            "/home/cytech/scala/discord_scala/adminapi/project/project/src/main/java",
+            "/home/cytech/scala/discord_scala/adminapi/project/project/src/main/scala-sbt-1.0",
+            "/home/cytech/scala/discord_scala/adminapi/project/project/target/scala-2.12/sbt-1.0/src_managed/main"
         ],
         "dependencies": [
             
@@ -104,11 +104,11 @@
             "/home/cytech/.cache/coursier/v1/https/repo1.maven.org/maven2/org/reactivestreams/reactive-streams/1.0.3/reactive-streams-1.0.3.jar",
             "/home/cytech/.cache/coursier/v1/https/repo1.maven.org/maven2/com/typesafe/config/1.4.2/config-1.4.2.jar"
         ],
-        "out": "/data/discord_scala/adminapi/project/project/.bloop/adminapi-build-build",
-        "classesDir": "/data/discord_scala/adminapi/project/project/.bloop/adminapi-build-build/scala-2.12/sbt-1.0/classes",
+        "out": "/home/cytech/scala/discord_scala/adminapi/project/project/.bloop/adminapi-build-build",
+        "classesDir": "/home/cytech/scala/discord_scala/adminapi/project/project/.bloop/adminapi-build-build/scala-2.12/sbt-1.0/classes",
         "resources": [
-            "/data/discord_scala/adminapi/project/project/src/main/resources",
-            "/data/discord_scala/adminapi/project/project/target/scala-2.12/sbt-1.0/resource_managed/main"
+            "/home/cytech/scala/discord_scala/adminapi/project/project/src/main/resources",
+            "/home/cytech/scala/discord_scala/adminapi/project/project/target/scala-2.12/sbt-1.0/resource_managed/main"
         ],
         "scala": {
             "organization": "org.scala-lang",
@@ -216,7 +216,7 @@
             "config": {
                 "home": "/home/cytech/.sdkman/candidates/java/21-tem",
                 "options": [
-                    "-Duser.dir=/data/discord_scala/adminapi/project/project"
+                    "-Duser.dir=/home/cytech/scala/discord_scala/adminapi/project/project"
                 ]
             },
             "mainClass": [
@@ -225,11 +225,11 @@
             "runtimeConfig": {
                 "home": "/home/cytech/.sdkman/candidates/java/21-tem",
                 "options": [
-                    "-Duser.dir=/data/discord_scala/adminapi/project/project"
+                    "-Duser.dir=/home/cytech/scala/discord_scala/adminapi/project/project"
                 ]
             },
             "classpath": [
-                "/data/discord_scala/adminapi/project/project/.bloop/adminapi-build-build/scala-2.12/sbt-1.0/classes",
+                "/home/cytech/scala/discord_scala/adminapi/project/project/.bloop/adminapi-build-build/scala-2.12/sbt-1.0/classes",
                 "/home/cytech/.cache/coursier/v1/https/repo1.maven.org/maven2/ch/epfl/scala/sbt-bloop_2.12_1.0/2.0.8/sbt-bloop_2.12_1.0-2.0.8.jar",
                 "/home/cytech/.cache/coursier/v1/https/repo1.maven.org/maven2/ch/epfl/scala/bloop-config_2.12/2.3.1/bloop-config_2.12-2.3.1.jar",
                 "/home/cytech/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala/jsoniter-scala-core_2.12/2.13.5.2/jsoniter-scala-core_2.12-2.13.5.2.jar",

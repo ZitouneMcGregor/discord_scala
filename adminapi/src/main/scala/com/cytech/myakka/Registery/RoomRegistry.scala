@@ -12,11 +12,15 @@ import com.cytech.myakka.configuration.PostgresConfig
 import doobie.postgres.sqlstate
 import scala.util.Try
 
-// Case class for Room (no capacity)
-final case class Room(id: Option[Int], name: String, serverId: Int)
-final case class Rooms(rooms: immutable.Seq[Room])
+
 
 object RoomRegistry {
+
+  // Case class for Room (no capacity)
+  final case class Room(id: Option[Int], name: String, serverId: Int)
+  final case class Rooms(rooms: immutable.Seq[Room])
+
+
   // Actor protocol
   sealed trait Command
   final case class GetRooms(replyTo: ActorRef[Rooms]) extends Command

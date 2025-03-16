@@ -14,12 +14,17 @@ import doobie.postgres.sqlstate
 
 
 
-final case class Server(id: Option[Int], name: String, img: Option[String])
-final case class Servers(servers: immutable.Seq[Server])
 
 
 
 object ServerRegistry {
+
+
+  final case class Server(id: Option[Int], name: String, img: Option[String])
+
+  final case class Servers(servers: immutable.Seq[Server])
+
+
   sealed trait Command
   final case class GetServers(replyTo: ActorRef[Servers]) extends Command
   final case class CreateServer(server: Server, replyTo: ActorRef[ActionPerformed]) extends Command
@@ -125,7 +130,7 @@ object ServerRegistry {
             
           }
           Behaviors.same
-        case _ => 
+        case null =>
             println("Received an unknown command.")
             Behaviors.same
     }

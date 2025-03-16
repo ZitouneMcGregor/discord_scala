@@ -4,7 +4,6 @@ import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.server.Route
 import scala.concurrent.Future
-import com.cytech.myakka.registery.*
 import com.cytech.myakka.registery.RoomRegistry.*
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.ActorSystem
@@ -23,7 +22,7 @@ trait RoomJsonFormats extends DefaultJsonProtocol {
   implicit val actionPerformedFormat: RootJsonFormat[ActionPerformed] = jsonFormat2(ActionPerformed.apply)
 }
 
-class RoomRoutes(roomRegistry: ActorRef[RoomRegistry.Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends RoomJsonFormats {
+class RoomRoutes(roomRegistry: ActorRef[Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends RoomJsonFormats {
 
   private implicit val timeout: Timeout = Timeout.create(system.settings.config.getDuration("app.routes.ask-timeout"))
 

@@ -7,7 +7,6 @@ import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.server.Route
 
 import scala.concurrent.Future
-import com.cytech.myakka.registery.*
 import com.cytech.myakka.registery.ServerRegistry.*
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.ActorSystem
@@ -29,7 +28,7 @@ trait ServerJsonFormats extends DefaultJsonProtocol {
 }
 
 
-class ServerRoutes(serverRegistry: ActorRef[ServerRegistry.Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends ServerJsonFormats {
+class ServerRoutes(serverRegistry: ActorRef[Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends ServerJsonFormats {
   private given Timeout = Timeout.create(system.settings.config.getDuration("app.routes.ask-timeout"))
 
   def getServers(): Future[Servers] = 

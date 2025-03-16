@@ -5,7 +5,6 @@ import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.server.Route
 
 import scala.concurrent.Future
-import com.cytech.myakka.registery.*
 import com.cytech.myakka.registery.UserRegistry.*
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.ActorSystem
@@ -28,7 +27,7 @@ trait UserJsonFormats extends DefaultJsonProtocol {
 
 //#import-json-formats
 //#user-routes-class
-class UserRoutes(userRegistry: ActorRef[UserRegistry.Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends UserJsonFormats {
+class UserRoutes(userRegistry: ActorRef[Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends UserJsonFormats {
 
   //#user-routes-class
 

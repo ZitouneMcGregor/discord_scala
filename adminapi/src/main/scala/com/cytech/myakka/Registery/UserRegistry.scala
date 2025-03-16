@@ -14,15 +14,17 @@ import com.cytech.myakka.configuration.PostgresConfig
 import doobie.postgres.sqlstate
 
 
-//#user-case-classes
-final case class User(id:Option[Int], username: String, password: String, deleted: Option[Boolean])
-final case class Users(users: immutable.Seq[User])
 
-
-//#user-case-classes
 
 
 object UserRegistry {
+
+
+  //#user-case-classes
+  final case class User(id: Option[Int], username: String, password: String, deleted: Option[Boolean])
+  final case class Users(users: immutable.Seq[User])
+
+
   // actor protocol
   sealed trait Command
   final case class GetUsers(replyTo: ActorRef[Users]) extends Command
