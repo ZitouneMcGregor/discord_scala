@@ -17,7 +17,6 @@ import spray.json.*
 import spray.json.DefaultJsonProtocol._
 import org.apache.pekko.http.cors.scaladsl.CorsDirectives._
 
-// JSON formats for Room, Rooms, and ActionPerformed
 trait RoomJsonFormats extends DefaultJsonProtocol {
   implicit val roomFormat: RootJsonFormat[Room] = jsonFormat3(Room.apply)
   implicit val roomListFormat: RootJsonFormat[Rooms] = jsonFormat1(Rooms.apply)
@@ -26,10 +25,8 @@ trait RoomJsonFormats extends DefaultJsonProtocol {
 
 class RoomRoutes(roomRegistry: ActorRef[RoomRegistry.Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends RoomJsonFormats {
 
-  // Implicit timeout for ask pattern, configured in application.conf
   private implicit val timeout: Timeout = Timeout.create(system.settings.config.getDuration("app.routes.ask-timeout"))
 
-  // Methods to interact with RoomRegistry actor
   def getRooms(): Future[Rooms] =
     roomRegistry.ask(GetRooms.apply)
 
@@ -45,7 +42,6 @@ class RoomRoutes(roomRegistry: ActorRef[RoomRegistry.Command], auth: BasicAuthCo
   def updateRoom(roomId: String, updatedRoom: Room): Future[ActionPerformed] =
     roomRegistry.ask(UpdateRoom(roomId, updatedRoom, _))
 
-  // Basic authentication logic
   def myUserPassAuthenticator(credentials: Credentials): Option[String] = {
     credentials match {
       case p @ Credentials.Provided(id) if id == auth.user && p.verify(auth.password) => Some(id)
@@ -53,7 +49,6 @@ class RoomRoutes(roomRegistry: ActorRef[RoomRegistry.Command], auth: BasicAuthCo
     }
   }
 
-  // Define the HTTP routes
   val roomRoutes: Route = cors() { // Enable CORS
     pathPrefix("rooms") {
       authenticateBasic(realm = "secure site", myUserPassAuthenticator) { _ =>
