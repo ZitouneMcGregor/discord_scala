@@ -6,18 +6,16 @@ import org.apache.pekko.http.scaladsl.Http
 import org.apache.pekko.http.scaladsl.server.Route
 import com.cytech.myakka.configuration.{BasicAuthConfig, PostgresConfig}
 import com.typesafe.config.ConfigFactory
-import com.cytech.myakka.registery.* 
-import com.cytech.myakka.routes.*
+import com.cytech.myakka.registery.{RoomRegistry, ServerRegistry, UserRegistry}
+import com.cytech.myakka.routes.{RoomRoutes, ServerRoutes, UserRoutes}
+import org.apache.pekko.http.scaladsl.server.RouteConcatenation._
 import scala.util.Failure
 import scala.util.Success
 import org.apache.pekko.http.scaladsl.server.Directives._enhanceRouteWithConcatenation
 import org.apache.pekko.http.scaladsl.server.RouteConcatenation._enhanceRouteWithConcatenation
 
-//#main-class
 object QuickstartApp {
-  //#start-http-server
   private def startHttpServer(routes: Route)(implicit system: ActorSystem[_]): Unit = {
-    // Akka HTTP still needs a classic ActorSystem to start
     import system.executionContext
 
     val futureBinding = Http().newServerAt("0.0.0.0", 8080).bind(routes)
@@ -30,34 +28,36 @@ object QuickstartApp {
         system.terminate()
     }
   }
-  //#start-http-server
+
   def main(args: Array[String]): Unit = {
-    // configuration
+    // Load configuration
     val config = ConfigFactory.load("application.conf")
     val pgConfig = PostgresConfig(config)
     val authConfig = BasicAuthConfig(config)
 
-    //#server-bootstrapping
+    // UserRegistry, RoomRegistry, and ServerRegistry
     val rootBehavior = Behaviors.setup[Nothing] { context =>
-      val userRegistryActor = context.spawn(UserRegistry(pgConfig), "UserRegistryActor")
-      val serverRegistryActor = context.spawn(ServerRegistry(pgConfig), "ServerRegistryActor")
-      val userServerRegistryActor = context.spawn(UserServerRegistry(pgConfig), "UserServerRegistryActor") 
- 
-
-      context.watch(userRegistryActor)
-      context.watch(serverRegistryActor)
-      context.watch(userServerRegistryActor)
+      context.log.info("Starting UserRegistry, RoomRegistry, and ServerRegistry")
       
-      val routes = new UserRoutes(userRegistryActor, authConfig)(context.system)
-      val serverRoutes = new ServerRoutes(serverRegistryActor, authConfig)(context.system) 
-      val userServerRoutes = new UserServerRoutes(userServerRegistryActor, authConfig)(context.system) 
+      val userRegistryActor = context.spawn(UserRegistry(pgConfig), "UserRegistryActor")
+      val roomRegistryActor = context.spawn(RoomRegistry(pgConfig), "RoomRegistryActor")
+      val serverRegistryActor = context.spawn(ServerRegistry(pgConfig), "ServerRegistryActor")
+      
+      context.watch(userRegistryActor)
+      context.watch(roomRegistryActor)
+      context.watch(serverRegistryActor)
 
-      startHttpServer(routes.userRoutes ~ serverRoutes.serverRoutes ~ userServerRoutes.userServerRoutes)(context.system)
+      val userRoutes = new UserRoutes(userRegistryActor, authConfig)(context.system)
+      val roomRoutes = new RoomRoutes(roomRegistryActor, authConfig)(context.system)
+      val serverRoutes = new ServerRoutes(serverRegistryActor, authConfig)(context.system)
 
+      // Combine all routes
+      val combinedRoutes: Route = userRoutes.userRoutes ~ roomRoutes.roomRoutes ~ serverRoutes.serverRoutes
+
+      startHttpServer(combinedRoutes)(context.system)
       Behaviors.empty
     }
     val system = ActorSystem[Nothing](rootBehavior, "HelloAkkaHttpServer")
-    //#server-bootstrapping
   }
 }
 //#main-class
