@@ -30,6 +30,7 @@ object UserRegistry {
   final case class GetUsers(replyTo: ActorRef[Users]) extends Command
   final case class CreateUser(user: User, replyTo: ActorRef[ActionPerformed]) extends Command
   final case class GetUser(username: String, replyTo: ActorRef[GetUserResponse]) extends Command
+  final case class GetUserById(id: Int, replyTo: ActorRef[GetUserResponse]) extends Command
   final case class DeleteUser(username: String, replyTo: ActorRef[ActionPerformed]) extends Command
   final case class UpdateUser(username: String, newUsername: String, newPassword: String, replyTo: ActorRef[ActionPerformed]) extends Command
 
@@ -70,7 +71,13 @@ object UserRegistry {
       unsafeRunSync()
   }
 
-
+  def dbGetUserById(xa: Transactor, id: Int): Option[User] = {
+    sql"SELECT * FROM users WHERE id = $id".
+      query[User].
+      option.
+      transact(xa).
+      unsafeRunSync()
+  }
 
   
   def dbCreateUser(xa: Transactor, user: User): IO[Either[String, User]] = {
@@ -120,6 +127,9 @@ object UserRegistry {
           Behaviors.same
       case GetUser(username, replyTo) =>
         replyTo !  GetUserResponse(dbGetUser(xa, username))
+        Behaviors.same
+      case GetUserById(id, replyTo) =>
+        replyTo !  GetUserResponse(dbGetUserById(xa, id))
         Behaviors.same
       case DeleteUser(username, replyTo) =>
         replyTo ! ActionPerformed(true,s"User $username deleted.")

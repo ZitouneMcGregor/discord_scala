@@ -41,6 +41,9 @@ class UserRoutes(userRegistry: ActorRef[Command], auth: BasicAuthConfig)(implici
 
   def getUser(username: String): Future[GetUserResponse] =
     userRegistry.ask(GetUser(username, _))
+  
+  def getUserById(id: Int): Future[GetUserResponse] =
+    userRegistry.ask(GetUserById(id, _))
 
   def createUser(user: User): Future[ActionPerformed] =
     userRegistry.ask(CreateUser(user, _))
@@ -107,7 +110,19 @@ class UserRoutes(userRegistry: ActorRef[Command], auth: BasicAuthConfig)(implici
 
               }
             })
-        })
+        },
+        pathPrefix("id" / IntNumber) { id =>
+            get {
+              rejectEmptyResponse {
+                onSuccess(getUserById(id)) { response =>
+                  complete(response.maybeUser)
+                }
+              }
+            }
+          }
+        
+        
+        )
     }
     //#users-get-delete
   }
