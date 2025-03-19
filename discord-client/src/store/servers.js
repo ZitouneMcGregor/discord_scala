@@ -13,7 +13,7 @@ export const useServerStore = defineStore('servers', {
   actions: {
     async fetchAllServers() {
       try {
-        const response = await axios.get('http://localhost:8080/server');
+        const response = await axios.get('http://localhost:8080/servers');
         this.allServers = response.data;
       } catch (error) {
         console.error('Erreur fetchAllServers', error);
@@ -42,7 +42,7 @@ export const useServerStore = defineStore('servers', {
 
     async createServer(serverName, serverImage, userId) {
       try {
-        const response = await axios.post('http://localhost:8080/server', {
+        const response = await axios.post('http://localhost:8080/servers', {
           name: serverName,
           img: serverImage
         })
@@ -50,7 +50,7 @@ export const useServerStore = defineStore('servers', {
         if (response.status === 201) {
           const newServerId = parseInt(response.data, 10)
           
-          const addResp = await axios.post(`http://localhost:8080/server/${newServerId}/userServer`, {
+          const addResp = await axios.post(`http://localhost:8080/servers/${newServerId}/users`, {
             user_id: userId,
             server_id: newServerId,
             admin: true
@@ -73,7 +73,7 @@ export const useServerStore = defineStore('servers', {
     async addUserOnServer(userId, serverId) {
       try {
         const response = await axios.post(
-          `http://localhost:8080/server/${serverId}/userServer`,
+          `http://localhost:8080/servers/${serverId}/users`,
           {
             user_id: userId,
             server_id: serverId,
@@ -97,7 +97,7 @@ export const useServerStore = defineStore('servers', {
 
     async leaveServer(userId, serverId) {
       try {
-        const response = await axios.delete(`http://localhost:8080/server/${serverId}/userServer`, {
+        const response = await axios.delete(`http://localhost:8080/servers/${serverId}/users`, {
           data: { user_id: userId, server_id: serverId }
         });
         if (response.status === 200) {
@@ -110,7 +110,7 @@ export const useServerStore = defineStore('servers', {
 
     async updateServer(serverData) {
       try {
-        const response = await axios.put(`http://localhost:8080/server/${serverData.id}`, {
+        const response = await axios.put(`http://localhost:8080/servers/${serverData.id}`, {
           name: serverData.name,
           img: serverData.image
         });
@@ -124,7 +124,7 @@ export const useServerStore = defineStore('servers', {
 
     async fetchServerUsers(serverId) {
       try {
-        const response = await axios.get(`http://localhost:8080/server/${serverId}/users`);
+        const response = await axios.get(`http://localhost:8080/servers/${serverId}/users`);
         this.serverUsers = response.data;
         console.log(this.serverUsers)
       } catch (error) {
@@ -134,7 +134,7 @@ export const useServerStore = defineStore('servers', {
 
     async deleteServer(serverId) {
       try {
-        const response = await axios.delete(`http://localhost:8080/server/${serverId}`);
+        const response = await axios.delete(`http://localhost:8080/servers/${serverId}`);
         if (response.status === 200) {
           console.log(`Serveur ${serverId} supprimé avec succès`);
           await this.fetchAllServers();

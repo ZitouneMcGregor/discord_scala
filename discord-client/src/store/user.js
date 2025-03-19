@@ -17,7 +17,7 @@ export const useUserStore = defineStore('users', {
     },
     async fetchInviteUsers(serverId) {
       try {
-        const response = await axios.get(`http://localhost:8080/server/${serverId}/invite`);
+        const response = await axios.get(`http://localhost:8080/servers/${serverId}/invite`);
         this.inviteUsers = response.data;
       } catch (error) {
         console.error('Erreur fetchInviteUsers', error);
