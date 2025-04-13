@@ -24,6 +24,9 @@ trait UserServerJsonFormats extends DefaultJsonProtocol {
   given userServersFormat: RootJsonFormat[UserServers] = jsonFormat1(UserServers.apply)
   given actionPerformedFormat: RootJsonFormat[ActionPerformed] = jsonFormat2(ActionPerformed.apply)
   given updateAdminRequestFormat: RootJsonFormat[UpdateAdminRequest] = jsonFormat1(UpdateAdminRequest.apply)
+  given serverFormat: RootJsonFormat[Server] = jsonFormat3(Server.apply)
+  given serversFormat: RootJsonFormat[Servers] = jsonFormat1(Servers.apply)
+
 }
 
 class UserServerRoutes(userServerRegistry: ActorRef[UserServerRegistry.Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends UserServerJsonFormats {
@@ -54,6 +57,21 @@ class UserServerRoutes(userServerRegistry: ActorRef[UserServerRegistry.Command],
   }
 
   val userServerRoutes: Route = cors() {
+  concat(
+    // Route: GET /users/:userId/servers
+    path("users" / IntNumber / "servers") { userId =>
+      authenticateBasic(realm = "secure site", myUserPassAuthenticator) { _ =>
+        get {
+          onSuccess(userServerRegistry.ask[Servers](GetServersFromUser(userId, _))) {
+            (servers: Servers) => complete(StatusCodes.OK, servers)
+          }
+
+
+        }
+      }
+    },
+
+    // Route: /servers/:serverId/users and subroutes
     pathPrefix("servers" / IntNumber / "users") { serverId =>
       authenticateBasic(realm = "secure site", myUserPassAuthenticator) { _ =>
         concat(
@@ -79,7 +97,7 @@ class UserServerRoutes(userServerRegistry: ActorRef[UserServerRegistry.Command],
           },
           path(IntNumber) { userId =>
             concat(
-              get { // New route for specific user
+              get {
                 onSuccess(getUserInServer(serverId, userId)) {
                   case Some(userServer) => complete(StatusCodes.OK, userServer)
                   case None => complete(StatusCodes.NotFound, s"User $userId not found in server $serverId")
@@ -102,5 +120,7 @@ class UserServerRoutes(userServerRegistry: ActorRef[UserServerRegistry.Command],
         )
       }
     }
-  }
+  )
+}
+
 }

@@ -23,6 +23,9 @@ object UserServerRegistry {
   final case class UpdateAdmin(serverId: Int, userId: Int, admin: Boolean, replyTo: ActorRef[ActionPerformed]) extends Command
   // New command
   final case class GetUserInServer(serverId: Int, userId: Int, replyTo: ActorRef[Option[UserServer]]) extends Command
+  final case class GetServersFromUser(userId: Int, replyTo: ActorRef[Servers]) extends Command
+  final case class Server(id: Option[Int], name: String, img: String)
+  final case class Servers(servers: Seq[Server])
 
   def apply(pgConfig: PostgresConfig): Behavior[Command] = {
     registry(transactor(pgConfig))
@@ -91,6 +94,23 @@ object UserServerRegistry {
       .unsafeRunSync()
   }
 
+  def dbGetServersFromUser(xa: Transactor, userId: Int): Servers = {
+    Servers(
+      sql"""
+        SELECT s.id, s.name, s.img 
+        FROM servers s
+        JOIN server_user su ON s.id = su.server_id
+        WHERE su.user_id = $userId
+      """
+
+      .query[Server]
+      .to[List]
+      .transact(xa)
+      .unsafeRunSync()
+    )
+  }
+
+
   private def registry(xa: Transactor): Behavior[Command] =
     Behaviors.receiveMessage {
       case GetUsers(serverId, replyTo) =>
@@ -128,5 +148,13 @@ object UserServerRegistry {
       case GetUserInServer(serverId, userId, replyTo) =>
         replyTo ! dbGetUserInServer(xa, serverId, userId)
         Behaviors.same
+
+      case GetServersFromUser(userId, replyTo) =>
+        replyTo ! dbGetServersFromUser(xa, userId)
+        Behaviors.same
     }
+
+      
+
+      
 }
