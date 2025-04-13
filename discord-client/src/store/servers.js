@@ -23,8 +23,8 @@
       async fetchUserServers(userId) {
         try {
           const response = await axios.get(`http://localhost:8080/users/${userId}/servers`);
-          this.userServers = response.data;
-        } catch (error) {
+          this.userServers = response.data.servers;
+          } catch (error) {
           console.error('Erreur fetchUserServers', error);
         }
       },
@@ -51,6 +51,12 @@
             const serverListResponse = await axios.get("http://localhost:8080/servers");
             const latestServer = serverListResponse.data.servers.slice(-1)[0];
             const newServerId = latestServer?.id;
+
+            if (!newServerId) {
+              console.error("Could not determine new server ID");
+              return false;
+            }
+            
                         
             const addResp = await axios.post(`http://localhost:8080/servers/${newServerId}/users`, {
               user_id: userId,
