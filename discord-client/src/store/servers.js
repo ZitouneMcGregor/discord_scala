@@ -85,6 +85,7 @@
             {
               user_id: userId,
               server_id: serverId,
+              admin: false
             }
           );
           if (response.status === 201) {
