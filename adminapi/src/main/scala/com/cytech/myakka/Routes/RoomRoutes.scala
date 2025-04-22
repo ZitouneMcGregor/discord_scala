@@ -17,9 +17,9 @@ import spray.json.DefaultJsonProtocol._
 import org.apache.pekko.http.cors.scaladsl.CorsDirectives._
 
 trait RoomJsonFormats extends DefaultJsonProtocol {
-  implicit val roomFormat: RootJsonFormat[Room] = jsonFormat3(Room.apply)
-  implicit val roomListFormat: RootJsonFormat[Rooms] = jsonFormat1(Rooms.apply)
-  implicit val actionPerformedFormat: RootJsonFormat[ActionPerformed] = jsonFormat2(ActionPerformed.apply)
+  given roomFormat: RootJsonFormat[Room] = jsonFormat3(Room.apply)
+  given roomListFormat: RootJsonFormat[Rooms] = jsonFormat1(Rooms.apply)
+  given actionPerformedFormat: RootJsonFormat[ActionPerformed] = jsonFormat2(ActionPerformed.apply)
 }
 
 class RoomRoutes(roomRegistry: ActorRef[Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends RoomJsonFormats {
