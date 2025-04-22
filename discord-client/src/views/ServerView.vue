@@ -9,10 +9,16 @@
       <button class="btn-danger" style="margin-top: 20px;" @click="leaveCurrentServer">
         Quitter le serveur
       </button>
-      <button v-for="user in serverStore.serverUsers.filter(u => u.admin)"
-        :key="user.user.id" class="btn-danger" style="margin-top: 20px;" @click="deleteServer">
-        Supprimer le serveur
-      </button>
+      <button
+  v-for="user in serverStore.serverUsers.users?.filter(u => u.admin)"
+  :key="user.id"
+  class="btn-danger"
+  style="margin-top: 20px;"
+  @click="deleteServer"
+>
+  Supprimer le serveur
+</button>
+
 
       <h2>Rooms du serveur {{ serverId }}</h2>
       <ul>
@@ -106,10 +112,10 @@
       <ul>
         <li
           v-for="user in serverStore.serverUsers"
-          :key="user.user.id"
+          :key="user.id"
           :class="{ admin: user.admin }"
         >
-          {{ user.user.username }}
+          {{ user.username }}
         </li>
       </ul>
     </div>
