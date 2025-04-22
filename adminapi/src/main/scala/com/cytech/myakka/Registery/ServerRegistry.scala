@@ -21,8 +21,9 @@ object ServerRegistry {
 
 
   final case class Server(id: Option[Int], name: String, img: Option[String])
-
   final case class Servers(servers: immutable.Seq[Server])
+  final case class Room(id: Option[Int], name: String, serverId: Int)
+  final case class Rooms(rooms: immutable.Seq[Room])
 
 
   sealed trait Command
@@ -31,7 +32,7 @@ object ServerRegistry {
   final case class GetServer(id: Int, replyTo: ActorRef[GetServerResponse]) extends Command
   final case class DeleteServer(id: Int, replyTo: ActorRef[ActionPerformed]) extends Command
   final case class UpdateServer(id: Int, newName: String, newImg: String, replyTo: ActorRef[ActionPerformed]) extends Command
-
+  final case class GetRoomsByServer(serverId: Int, replyTo: ActorRef[Rooms]) extends Command
 
   final case class GetServerResponse(maybeServer: Option[Server])
   final case class ActionPerformed(success: Boolean, description: String)
@@ -58,6 +59,16 @@ object ServerRegistry {
       to[List].
       transact(xa).
       unsafeRunSync()
+    )
+  }
+
+  def dbGetRoomsByServer(serverId: Int, xa: Transactor): Rooms = {
+    Rooms(
+      sql"SELECT id, name FROM room WHERE id_server = $serverId"
+        .query[Room]
+        .to[List]
+        .transact(xa)
+        .unsafeRunSync()
     )
   }
 
@@ -129,6 +140,9 @@ object ServerRegistry {
             replyTo ! ActionPerformed(false,errorMessage)
             
           }
+          Behaviors.same
+        case GetRoomsByServer(serverId, replyTo) => // Added case for GetRoomsByServer
+          replyTo ! dbGetRoomsByServer(serverId, xa)
           Behaviors.same
         case null =>
             println("Received an unknown command.")

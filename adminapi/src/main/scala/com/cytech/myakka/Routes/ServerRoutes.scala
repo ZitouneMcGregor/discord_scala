@@ -21,6 +21,8 @@ import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport.*
 
 
 trait ServerJsonFormats extends DefaultJsonProtocol {
+  given roomFormat: RootJsonFormat[Room] = jsonFormat3(Room.apply)
+  given roomListFormat: RootJsonFormat[Rooms] = jsonFormat1(Rooms.apply)
   given serverFormat: RootJsonFormat[Server] = jsonFormat3(Server.apply)
   given serverListFormat: RootJsonFormat[Servers] = jsonFormat1(Servers.apply)
   given actionPerformedFormat: RootJsonFormat[ActionPerformed] = jsonFormat2(ActionPerformed.apply)
@@ -46,6 +48,9 @@ class ServerRoutes(serverRegistry: ActorRef[Command], auth: BasicAuthConfig)(imp
   def updateServer(id: Int, newName: String, newImg: String): Future[ActionPerformed] = 
     serverRegistry.ask(UpdateServer(id, newName, newImg, _))
   
+  def getRoomsByServer(serverId: Int): Future[Rooms] =
+    serverRegistry.ask(GetRoomsByServer(serverId, _))
+
   def myUserPassAuthenticator(credentials: Credentials): Option[String] = {
     credentials match {
       case p @ Credentials.Provided(id) if id == auth.user && p.verify(auth.password) => Some(id)
@@ -104,8 +109,20 @@ class ServerRoutes(serverRegistry: ActorRef[Command], auth: BasicAuthConfig)(imp
                     case None =>
                       complete(StatusCodes.BadRequest, "Invalid server ID format")
                   }
+                },
+                path(Segment / "rooms") { id =>
+                  val maybeIntId = id.toIntOption
+                  maybeIntId match {
+                    case Some(intId) =>
+                      get {
+                        onSuccess(getRoomsByServer(intId)) { rooms =>
+                          complete(StatusCodes.OK, rooms)
+                        }
+                      }
+                    case None =>
+                      complete(StatusCodes.BadRequest, "Invalid server ID format")
+                  }
                 }
-
             )
          }
     }
