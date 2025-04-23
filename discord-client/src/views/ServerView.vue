@@ -10,8 +10,7 @@
         Quitter le serveur
       </button>
       <button
-  v-for="user in serverStore.serverUsers.users?.filter(u => u.admin)"
-  :key="user.id"
+  v-if="serverStore.serverUsers.users?.some(u => u.id === authStore.user.id && u.admin)"
   class="btn-danger"
   style="margin-top: 20px;"
   @click="deleteServer"
@@ -218,9 +217,13 @@ export default {
     }
 
     onMounted(async () => {
-      if (serverId) {
-        await roomStore.fetchRooms(serverId)
-        await serverStore.fetchServerUsers(serverId)
+      if (serverId && !isNaN(serverId)) {
+        roomStore.setServerId(serverId);
+        await roomStore.fetchRooms(serverId);
+        console.log('Rooms after fetch:', roomStore.rooms); // Debug log
+        await serverStore.fetchServerUsers(serverId);
+      } else {
+        console.error('Invalid serverId on mount:', serverId);
       }
     })
 
@@ -231,9 +234,14 @@ export default {
 
     // Ajout d'une room
     async function addRoom() {
-      if (!newRoomName.value.trim()) return
-      await roomStore.addRoom(serverId, newRoomName.value.trim())
-      newRoomName.value = ''
+      if (!newRoomName.value.trim()) return;
+      if (!serverId || isNaN(serverId)) {
+        console.error('Invalid serverId:', serverId);
+        return;
+      }
+      await roomStore.addRoom(serverId, newRoomName.value.trim());
+      console.log('Rooms after adding:', roomStore.rooms); // Debug log
+      newRoomName.value = '';
     }
 
     // Ouvrir la modale pour éditer la room
@@ -262,12 +270,21 @@ export default {
     }
 
     async function deleteSelectedRoom() {
-      if (!selectedRoom.value) return
-      await roomStore.deleteRoom(selectedRoom.value.id_server, selectedRoom.value.id)
-      // Refresh la liste
-      await roomStore.fetchRooms(selectedRoom.value.id_server)
-      selectedRoom.value = null
-      closeRoomModal()
+      if (!selectedRoom.value) return;
+      try {
+        const serverId = selectedRoom.value.id_server ?? roomStore.serverId;
+        if (!serverId) {
+          console.error('serverId is missing');
+          alert('Impossible de supprimer la room : ID du serveur manquant.');
+          return;
+        }
+        await roomStore.deleteRoom(selectedRoom.value.id, serverId);
+        console.log('Rooms after deletion:', roomStore.rooms);
+        selectedRoom.value = null;
+      } catch (error) {
+        console.error('Erreur lors de la suppression de la room', error);
+        alert('Une erreur est survenue lors de la suppression de la room.');
+      }
     }
 
     // Quitter le serveur
