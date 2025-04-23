@@ -4,7 +4,8 @@
     <div class="left-panel">
       <h1>Serveur</h1>
       <button class="btn-primary" @click="openInviteModal">Inviter des gens</button>
-
+      <button class="btn-primary" @click="openGererModal">Gerer les users</button>
+      <h1 v-if="showGererModal">TEST</h1>
       <!-- Boutons quitter/supprimer le serveur -->
       <button class="btn-danger" style="margin-top: 20px;" @click="leaveCurrentServer">
         Quitter le serveur
@@ -75,6 +76,51 @@
           <button class="btn-primary modal-btn" @click="addUserOnServer">Inviter</button>
         </div>
       </div>
+
+      <!-- Modale de gestion -->
+      <!-- Modale de gestion -->
+      <div v-if="showGererModal">
+        <div class="modal-overlay" @click="closeGererModal"></div>
+        <div class="invite-modal">
+          <button @click="closeGererModal">X</button>
+          <h3>Gérer les utilisateurs</h3>
+
+          <ul v-if="serverStore.serverUsers.users?.length">
+            <li
+              v-for="user in serverStore.serverUsers.users"
+              :key="user.id"
+              style="display: flex; justify-content: space-between; align-items: center; gap: 5px;"
+            >
+              <span>{{ user.id }}</span>
+              <div style="display: flex; gap: 5px;">
+                <button
+                  class="btn-primary"
+                  v-if="!user.admin"
+                  @click="console.log('Promouvoir', user.id)"
+                >
+                  Promouvoir
+                </button>
+                <button
+                  class="btn-danger"
+                  v-if="user.admin"
+                  @click="console.log('Retirer admin', user.id)"
+                >
+                  Retirer admin
+                </button>
+                <button
+                  class="btn-danger"
+                  @click="console.log('Kick', user.id)"
+                >
+                  Kick
+                </button>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+
+
     </div>
 
     <!-- Colonne du milieu -->
@@ -173,6 +219,7 @@ export default {
 
     // Gestion de la modale d'invitation
     const showInviteModal = ref(false)
+    const showGererModal = ref(false)
     const inviteInput = ref('')
     const selectedUser = ref(null)
 
@@ -187,6 +234,16 @@ export default {
     function openInviteModal() {
       showInviteModal.value = true
       userStore.fetchInviteUsers(Number(serverId))
+    }
+
+    function openGererModal() {
+      showGererModal.value = true
+      console.log(serverStore.serverUsers);
+      
+    }
+
+    function closeGererModal() {
+      showGererModal.value = false
     }
 
     function closeInviteModal() {
@@ -317,6 +374,12 @@ export default {
       inviteInput,
       selectedUser,
       filteredUsers,
+
+      // Modale de gestion
+      showGererModal,
+      openGererModal,
+      closeGererModal,
+
 
       openInviteModal,
       closeInviteModal,
