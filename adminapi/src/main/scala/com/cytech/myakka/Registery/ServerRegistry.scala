@@ -64,7 +64,7 @@ object ServerRegistry {
 
   def dbGetRoomsByServer(serverId: Int, xa: Transactor): Rooms = {
     Rooms(
-      sql"SELECT id, name FROM room WHERE id_server = $serverId"
+      sql"SELECT id, name, id_server FROM room WHERE id_server = $serverId"
         .query[Room]
         .to[List]
         .transact(xa)
