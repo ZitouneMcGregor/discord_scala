@@ -93,26 +93,27 @@
             >
             <span>{{ serverStore.userMap[user.user_id] || 'Utilisateur inconnu' }}</span>
             <div style="display: flex; gap: 5px;">
-                <button
-                  class="btn-primary"
-                  v-if="!user.admin"
-                  @click="console.log('Promouvoir', user.id)"
-                >
-                  Promouvoir
-                </button>
-                <button
-                  class="btn-danger"
-                  v-if="user.admin"
-                  @click="console.log('Retirer admin', user.id)"
-                >
-                  Retirer admin
-                </button>
-                <button
-                  class="btn-danger"
-                  @click="console.log('Kick', user.id)"
-                >
-                  Kick
-                </button>
+              <button
+  class="btn-primary"
+  v-if="!user.admin"
+  @click="serverStore.toggleAdmin(serverId, user.user_id, true)"
+>
+  Promouvoir
+</button>
+<button
+  class="btn-danger"
+  v-if="user.admin"
+  @click="serverStore.toggleAdmin(serverId, user.user_id, false)"
+>
+  Retirer admin
+</button>
+<button
+  class="btn-danger"
+  @click="serverStore.kickUser(serverId, user.user_id)"
+>
+  Kick
+</button>
+
               </div>
             </li>
           </ul>
