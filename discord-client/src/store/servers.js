@@ -7,7 +7,8 @@
       allServers: [],
       userServers: [],
       unjoinedServers: [],
-      serverUsers: []
+      serverUsers: [],
+      userMap: {} 
     }),
 
     actions: {
@@ -150,6 +151,61 @@
           }
         } catch (error) {
           console.error('Erreur lors de la suppression du serveur', error);
+        }
+      },
+
+      async fetchUserMap(userIds) {
+        try {
+          const entries = await Promise.all(
+            userIds.map(async id => {
+              const response = await axios.get(`http://localhost:8080/users/id/${id}`);
+              return [id, response.data.username];
+            })
+          );
+          this.userMap = Object.fromEntries(entries);
+        } catch (error) {
+          console.error('Erreur lors du fetchUserMap', error);
+        }
+      },
+
+      async fetchUserMap(userIds) {
+        try {
+          const entries = await Promise.all(
+            userIds.map(async id => {
+              const response = await axios.get(`http://localhost:8080/users/id/${id}`);
+              return [id, response.data.username];
+            })
+          );
+          this.userMap = Object.fromEntries(entries);
+          console.log('Résultat de userMap:', this.userMap);
+        } catch (error) {
+          console.error('Erreur lors du fetchUserMap', error);
+        }
+      },
+
+      async kickUser(serverId, userId) {
+        try {
+          const response = await axios.delete(`http://localhost:8080/servers/${serverId}/users/${userId}`);
+          if (response.status === 200) {
+            console.log(`Utilisateur ${userId} retiré du serveur ${serverId}`);
+            await this.fetchServerUsers(serverId);
+          }
+        } catch (error) {
+          console.error(`Erreur lors du kick de l'utilisateur ${userId}`, error);
+        }
+      },
+  
+      async toggleAdmin(serverId, userId, isAdmin) {
+        try {
+          const response = await axios.put(`http://localhost:8080/servers/${serverId}/users/${userId}`, {
+            admin: isAdmin
+          });
+          if (response.status === 200) {
+            console.log(`Admin ${isAdmin ? 'ajouté à' : 'retiré de'} l'utilisateur ${userId}`);
+            await this.fetchServerUsers(serverId);
+          }
+        } catch (error) {
+          console.error(`Erreur lors de la mise à jour du rôle admin de l'utilisateur ${userId}`, error);
         }
       }
     }
