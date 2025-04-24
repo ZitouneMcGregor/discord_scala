@@ -1,3 +1,5 @@
+import sbt.Keys.libraryDependencies
+
 lazy val pekkoHttpVersion = "1.1.0"
 lazy val pekkoVersion     = "1.1.2"
 lazy val pulsar4sVersion = "2.10.0"
@@ -19,7 +21,8 @@ lazy val root = (project in file(".")).
       "ch.qos.logback"    % "logback-classic"           % "1.5.18",
       "com.clever-cloud.pulsar4s" %% "pulsar4s-core" % pulsar4sVersion,
       "com.clever-cloud.pulsar4s" %% "pulsar4s-akka-streams" % pulsar4sVersion,
-      "org.mongodb.scala" %% "mongo-scala-driver" % "5.3.0"
-
+      "com.clever-cloud.pulsar4s" %% "pulsar4s-circe" % pulsar4sVersion,
+      ("org.mongodb.scala" %% "mongo-scala-driver" % "5.4.0").cross(CrossVersion.for3Use2_13),
+      "dev.zio" %% "zio-http" % "3.2.0"
     )
   )
