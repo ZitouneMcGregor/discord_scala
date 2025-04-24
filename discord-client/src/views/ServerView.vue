@@ -91,8 +91,8 @@
               :key="user.id"
               style="display: flex; justify-content: space-between; align-items: center; gap: 5px;"
             >
-              <span>{{ user.id }}</span>
-              <div style="display: flex; gap: 5px;">
+            <span>{{ serverStore.userMap[user.user_id] || 'Utilisateur inconnu' }}</span>
+            <div style="display: flex; gap: 5px;">
                 <button
                   class="btn-primary"
                   v-if="!user.admin"
@@ -237,10 +237,11 @@ export default {
     }
 
     function openGererModal() {
-      showGererModal.value = true
-      console.log(serverStore.serverUsers);
-      
-    }
+        showGererModal.value = true;
+        const userIds = serverStore.serverUsers.users?.map(u => u.user_id) || [];
+        serverStore.fetchUserMap(userIds);
+      }
+
 
     function closeGererModal() {
       showGererModal.value = false

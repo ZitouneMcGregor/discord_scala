@@ -7,7 +7,8 @@
       allServers: [],
       userServers: [],
       unjoinedServers: [],
-      serverUsers: []
+      serverUsers: [],
+      userMap: {} 
     }),
 
     actions: {
@@ -150,6 +151,35 @@
           }
         } catch (error) {
           console.error('Erreur lors de la suppression du serveur', error);
+        }
+      },
+
+      async fetchUserMap(userIds) {
+        try {
+          const entries = await Promise.all(
+            userIds.map(async id => {
+              const response = await axios.get(`http://localhost:8080/users/id/${id}`);
+              return [id, response.data.username];
+            })
+          );
+          this.userMap = Object.fromEntries(entries);
+        } catch (error) {
+          console.error('Erreur lors du fetchUserMap', error);
+        }
+      },
+
+      async fetchUserMap(userIds) {
+        try {
+          const entries = await Promise.all(
+            userIds.map(async id => {
+              const response = await axios.get(`http://localhost:8080/users/id/${id}`);
+              return [id, response.data.username];
+            })
+          );
+          this.userMap = Object.fromEntries(entries);
+          console.log('Résultat de userMap:', this.userMap);
+        } catch (error) {
+          console.error('Erreur lors du fetchUserMap', error);
         }
       }
     }
