@@ -41,7 +41,18 @@ services:
     volumes:
       - pulsar-data:/pulsar/data
       - pulsar-logs:/pulsar/logs
+  mongo:
+    image: mongo:6.0
+    container_name: discordMongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: "discordMongo"
 volumes:
   pulsar-data:
   pulsar-logs:
   pgdata:
+  mongo_data:
