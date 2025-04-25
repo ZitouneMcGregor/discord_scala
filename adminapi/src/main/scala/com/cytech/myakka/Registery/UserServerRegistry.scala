@@ -120,31 +120,30 @@ object UserServerRegistry {
       case AddUser(userServer, replyTo) =>
         dbAddUser(xa, userServer).unsafeRunSync() match {
           case Right(created) =>
-            replyTo ! ActionPerformed(true, s"User ${userServer.user_id} added to server ${userServer.server_id}")
-          case Left(error) =>
-            replyTo ! ActionPerformed(false, error)
+            replyTo ! ActionPerformed(true, s"User ${created.user_id} added to server ${created.server_id}")
+          case Left(errorMessage) =>
+            replyTo ! ActionPerformed(false, errorMessage)
         }
         Behaviors.same
 
       case RemoveUser(serverId, userId, replyTo) =>
-        val rowsAffected = dbRemoveUser(xa, serverId, userId)
-        if (rowsAffected > 0) {
-          replyTo ! ActionPerformed(true, s"User $userId removed from server $serverId")
-        } else {
-          replyTo ! ActionPerformed(false, s"User $userId not found in server $serverId")
+        dbRemoveUser(xa, serverId, userId) match {
+          case rows if rows > 0 =>
+            replyTo ! ActionPerformed(true, s"User $userId removed from server $serverId")
+          case _ =>
+            replyTo ! ActionPerformed(false, s"User $userId not found in server $serverId")
         }
         Behaviors.same
 
       case UpdateAdmin(serverId, userId, admin, replyTo) =>
-        val rowsAffected = dbUpdateAdmin(xa, serverId, userId, admin)
-        if (rowsAffected > 0) {
-          replyTo ! ActionPerformed(true, s"User $userId admin status updated to $admin in server $serverId")
-        } else {
-          replyTo ! ActionPerformed(false, s"User $userId not found in server $serverId")
+        dbUpdateAdmin(xa, serverId, userId, admin) match {
+          case rows if rows > 0 =>
+            replyTo ! ActionPerformed(true, s"User $userId admin status updated to $admin in server $serverId")
+          case _ =>
+            replyTo ! ActionPerformed(false, s"User $userId not found in server $serverId")
         }
         Behaviors.same
 
-      // New case for specific user in server
       case GetUserInServer(serverId, userId, replyTo) =>
         replyTo ! dbGetUserInServer(xa, serverId, userId)
         Behaviors.same
@@ -154,7 +153,4 @@ object UserServerRegistry {
         Behaviors.same
     }
 
-      
-
-      
 }

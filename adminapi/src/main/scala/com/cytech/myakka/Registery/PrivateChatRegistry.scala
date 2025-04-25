@@ -11,36 +11,33 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.cytech.myakka.configuration.PostgresConfig
 import doobie.postgres.sqlstate
-
-final case class PrivateChat(
-    id: Option[Int],
-    user_id_1: Int, 
-    user_id_2: Int,
-    delete_user_1: Option[Boolean],
-    delete_user_2: Option[Boolean]
-)
-final case class PrivateChats(privateChats: immutable.Seq[PrivateChat])
+import cats.syntax.all._
 
 object PrivateChatRegistry {
 
-  final case class PrivateChat(id: Option[Int], user_id_1: Int, user_id_2: Int, delete_user_1: Option[Boolean], delete_user_2: Option[Boolean])
+  final case class PrivateChat(
+    id: Option[Int] = None,
+    user_id_1: Int, 
+    user_id_2: Int,
+    delete_user_1: Option[Boolean] = Some(false),
+    delete_user_2: Option[Boolean] = Some(false)
+  )
   final case class PrivateChats(privateChats: immutable.Seq[PrivateChat])
 
   sealed trait Command
   final case class GetPrivateChats(userId: Int, replyTo: ActorRef[PrivateChats]) extends Command
-  final case class CreatePrivateChat(privateChat: PrivateChat, replyTo: ActorRef[ActionPerformed]) extends Command
+  final case class CreatePrivateChat(chat: PrivateChat, replyTo: ActorRef[ActionPerformed]) extends Command
   final case class GetPrivateChat(id: Int, replyTo: ActorRef[GetPrivateChatResponse]) extends Command
   final case class DeletePrivateChatForUser(id: Int, userId: Int, replyTo: ActorRef[ActionPerformed]) extends Command
 
-  final case class GetPrivateChatResponse(maybePrivateChat: Option[PrivateChat])
+  final case class GetPrivateChatResponse(maybeChat: Option[PrivateChat])
   final case class ActionPerformed(success: Boolean, description: String)
 
-  def apply(pgConfig: PostgresConfig): Behavior[Command] = {
+  def apply(pgConfig: PostgresConfig): Behavior[Command] =
     registry(transactor(pgConfig))
-  }
 
   type Transactor = doobie.Transactor.Aux[IO, Unit]
-  def transactor(pgConfig: PostgresConfig): Transactor = {
+  private def transactor(pgConfig: PostgresConfig): Transactor = {
     Transactor.fromDriverManager[IO](
       driver = "org.postgresql.Driver",
       url = pgConfig.url,
@@ -50,58 +47,80 @@ object PrivateChatRegistry {
     )
   }
 
-  def dbGetPrivateChats(xa: Transactor, userId: Int): PrivateChats = {
-    PrivateChats(
-      sql"""
-        SELECT id, user_id_1, user_id_2, delete_user_1, delete_user_2
-        FROM PRIVATE_CHAT
-        WHERE (user_id_1 = $userId AND delete_user_1 = false)
-          OR (user_id_2 = $userId AND delete_user_2 = false)
-      """
+  private def dbGetPrivateChats(xa: Transactor, userId: Int): PrivateChats = {
+    sql"""
+         SELECT id, user_id_1, user_id_2, delete_user_1, delete_user_2
+         FROM PRIVATE_CHAT
+         WHERE (user_id_1 = $userId AND COALESCE(delete_user_1, false) = false)
+            OR (user_id_2 = $userId AND COALESCE(delete_user_2, false) = false)
+       """
       .query[PrivateChat]
       .to[List]
+      .attempt
+      .map {
+        case Right(chats) => PrivateChats(chats)
+        case Left(e) =>
+          println(s"[DB ERROR] Failed to get private chats: ${e.getMessage}")
+          PrivateChats(Seq.empty)
+      }
       .transact(xa)
       .unsafeRunSync()
-    )
   }
 
-  def dbGetPrivateChat(xa: Transactor, chatId: Int): Option[PrivateChat] = {
+  private def dbGetPrivateChat(xa: Transactor, chatId: Int): Option[PrivateChat] =
     sql"""
-      SELECT id, user_id_1, user_id_2, delete_user_1, delete_user_2
-      FROM PRIVATE_CHAT
-      WHERE id = $chatId
-    """
-    .query[PrivateChat]
-    .option
-    .transact(xa)
-    .unsafeRunSync()
-  }
+         SELECT id, user_id_1, user_id_2, delete_user_1, delete_user_2
+         FROM PRIVATE_CHAT
+         WHERE id = $chatId
+       """
+      .query[PrivateChat]
+      .option
+      .attempt
+      .map {
+        case Right(chatOpt) => chatOpt
+        case Left(e) =>
+          println(s"[DB ERROR] Failed to get private chat: ${e.getMessage}")
+          None
+      }
+      .transact(xa)
+      .unsafeRunSync()
 
-  def dbCreatePrivateChat(xa: Transactor, chat: PrivateChat): IO[Boolean] = {
+  private def dbCreatePrivateChat(xa: Transactor, chat: PrivateChat): Boolean =
     sql"""
-      INSERT INTO PRIVATE_CHAT (user_id_1, user_id_2)
-      VALUES (${chat.user_id_1}, ${chat.user_id_2})
-    """
-    .update
-    .run
-    .transact(xa)
-    .map(_ > 0)
-  }
+         INSERT INTO PRIVATE_CHAT (user_id_1, user_id_2, delete_user_1, delete_user_2)
+         VALUES (${chat.user_id_1}, ${chat.user_id_2}, ${chat.delete_user_1.getOrElse(false)}, ${chat.delete_user_2.getOrElse(false)})
+       """
+      .update
+      .run
+      .attempt
+      .map {
+        case Right(_) => true
+        case Left(e) =>
+          println(s"[DB ERROR] Failed to create private chat: ${e.getMessage}")
+          false
+      }
+      .transact(xa)
+      .unsafeRunSync()
 
-  def dbDeletePrivateChat(xa: Transactor, chatId: Int, userId: Int): Boolean = {
-    val rowsUpdated = sql"""
-      UPDATE PRIVATE_CHAT
-      SET 
-        delete_user_1 = CASE WHEN user_id_1 = $userId THEN true ELSE delete_user_1 END,
-        delete_user_2 = CASE WHEN user_id_2 = $userId THEN true ELSE delete_user_2 END
-      WHERE id = $chatId
-    """
-    .update
-    .run
-    .transact(xa)
-    .unsafeRunSync()
-    rowsUpdated > 0
-  }
+  private def dbDeletePrivateChat(xa: Transactor, chatId: Int, userId: Int): Boolean =
+    sql"""
+         UPDATE PRIVATE_CHAT
+         SET delete_user_1 = CASE WHEN user_id_1 = $userId THEN true ELSE delete_user_1 END,
+             delete_user_2 = CASE WHEN user_id_2 = $userId THEN true ELSE delete_user_2 END,
+             updated_at     = NOW()
+         WHERE id = $chatId
+       """
+      .update
+      .run
+      .attempt
+      .map {
+        case Right(rowsUpdated) => rowsUpdated > 0
+        case Left(e) =>
+          println(s"[DB ERROR] Failed to delete private chat for user: ${e.getMessage}")
+          false
+      }
+      .transact(xa)
+      .unsafeRunSync()
 
   private def registry(xa: Transactor): Behavior[Command] =
     Behaviors.receiveMessage {
@@ -110,11 +129,8 @@ object PrivateChatRegistry {
         Behaviors.same
 
       case CreatePrivateChat(chat, replyTo) =>
-        val success = dbCreatePrivateChat(xa, chat).unsafeRunSync()
-        if (success)
-          replyTo ! ActionPerformed(true, "PrivateChat created.")
-        else
-          replyTo ! ActionPerformed(false, "Failed to create PrivateChat.")
+        val ok = dbCreatePrivateChat(xa, chat)
+        replyTo ! ActionPerformed(ok, if (ok) "PrivateChat created." else "Failed to create PrivateChat.")
         Behaviors.same
 
       case GetPrivateChat(chatId, replyTo) =>
@@ -122,11 +138,8 @@ object PrivateChatRegistry {
         Behaviors.same
 
       case DeletePrivateChatForUser(chatId, userId, replyTo) =>
-        val success = dbDeletePrivateChat(xa, chatId, userId)
-        if (success)
-          replyTo ! ActionPerformed(true, s"PrivateChat($chatId) updated for user $userId.")
-        else
-          replyTo ! ActionPerformed(false, s"Failed to update PrivateChat($chatId) for user $userId.")
+        val ok = dbDeletePrivateChat(xa, chatId, userId)
+        replyTo ! ActionPerformed(ok, if (ok) s"PrivateChat($chatId) updated for user $userId." else s"Failed to update PrivateChat($chatId) for user $userId.")
         Behaviors.same
     }
 }

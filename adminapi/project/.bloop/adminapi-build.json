@@ -112,8 +112,8 @@
             "/home/omar/.cache/coursier/v1/https/repo1.maven.org/maven2/org/reactivestreams/reactive-streams/1.0.3/reactive-streams-1.0.3.jar",
             "/home/omar/.cache/coursier/v1/https/repo1.maven.org/maven2/com/typesafe/config/1.4.2/config-1.4.2.jar"
         ],
-        "out": "/home/omar/discord_scala/adminapi/project/.bloop/adminapi-build",
-        "classesDir": "/home/omar/discord_scala/adminapi/project/.bloop/adminapi-build/scala-2.12/sbt-1.0/classes",
+        "out": "/home/cytech/ING33333333333333333333333333/discord_scala/adminapi/project/.bloop/adminapi-build",
+        "classesDir": "/home/cytech/ING33333333333333333333333333/discord_scala/adminapi/project/.bloop/adminapi-build/scala-2.12/sbt-1.0/classes",
         "resources": [
             "/home/omar/discord_scala/adminapi/project/src/main/resources",
             "/home/omar/discord_scala/adminapi/project/target/scala-2.12/sbt-1.0/resource_managed/main"
