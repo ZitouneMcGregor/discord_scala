@@ -11,7 +11,7 @@ import cats.effect.unsafe.implicits.global
 import com.cytech.myakka.configuration.PostgresConfig
 import doobie.postgres.sqlstate
 import scala.util.Try
-
+import cats.syntax.all._
 
 
 object RoomRegistry {
@@ -19,7 +19,6 @@ object RoomRegistry {
   // Case class for Room (no capacity)
   final case class Room(id: Option[Int], name: String, serverId: Int)
   final case class Rooms(rooms: immutable.Seq[Room])
-
 
   // Actor protocol
   sealed trait Command
@@ -47,14 +46,22 @@ object RoomRegistry {
     )
   }
 
-  def dbGetRooms(xa: Transactor): Rooms = {
-    Rooms(
-      sql"SELECT id, name, id_server FROM room".
-        query[Room].
-        to[List].
-        transact(xa).
-        unsafeRunSync()
-    )
+  private def dbGetRooms(xa: Transactor): Rooms = {
+    val list: List[Room] =
+      sql"SELECT id, name, id_server FROM room"
+        .query[Room]
+        .to[List]
+        .transact(xa)
+        .attempt
+        .map {
+          case Right(rs) => rs
+          case Left(e)   =>
+            println(s"[DB ERROR] getRooms: ${e.getMessage}")
+            Nil
+        }
+        .unsafeRunSync()
+
+    Rooms(list)
   }
 
   def dbGetRoom(xa: Transactor, roomId: String): Option[Room] = {
@@ -62,6 +69,14 @@ object RoomRegistry {
       sql"SELECT id, name, id_server FROM room WHERE id = $id".
         query[Room].
         option.
+        attempt.
+        map {
+          case Right(maybeRoom) =>
+            maybeRoom
+          case Left(e) =>
+            println(s"[DB ERROR] Failed to get room $roomId: ${e.getMessage}")
+            None
+        }.
         transact(xa).
         unsafeRunSync()
     }
@@ -74,16 +89,34 @@ object RoomRegistry {
       attemptSomeSqlState {
         case sqlstate.class23.UNIQUE_VIOLATION => s"Error: Room '${room.name}' already exists."
       }.
+      attempt.
+      map {
+        case Right(either) => either
+        case Left(e) =>
+          println(s"[DB ERROR] createRoom(${room.name}): ${e.getMessage}")
+          Left(s"Error: Could not create room '${room.name}'.")
+      }.
       transact(xa)
   }
 
-  def dbDeleteRoom(xa: Transactor, roomId: String): Option[Int] = {
-    Try(roomId.toInt).toOption.map { id =>
+  def dbDeleteRoom(xa: Transactor, roomId: String): Boolean = {
+  Try(roomId.toInt).toOption match {
+    case Some(id) =>
       sql"DELETE FROM room WHERE id = $id".
         update.
         run.
+        attempt.
+        map {
+          case Right(rows) => rows > 0
+          case Left(e) =>
+            println(s"[DB ERROR] Failed to delete room $roomId: ${e.getMessage}")
+            false
+        }.
         transact(xa).
         unsafeRunSync()
+    case None =>
+      println(s"[DB ERROR] Invalid room ID: $roomId")
+      false
     }
   }
 
@@ -109,9 +142,11 @@ object RoomRegistry {
       case GetRooms(replyTo) =>
         replyTo ! dbGetRooms(xa)
         Behaviors.same
+
       case GetRoom(roomId, replyTo) =>
         replyTo ! GetRoomResponse(dbGetRoom(xa, roomId))
         Behaviors.same
+
       case CreateRoom(room, replyTo) =>
         dbCreateRoom(xa, room).unsafeRunSync() match {
           case Right(createdRoom) =>
@@ -120,14 +155,16 @@ object RoomRegistry {
             replyTo ! ActionPerformed(false, errorMessage)
         }
         Behaviors.same
+
       case DeleteRoom(roomId, replyTo) =>
         dbDeleteRoom(xa, roomId) match {
-          case Some(rowsAffected) if rowsAffected > 0 =>
-            replyTo ! ActionPerformed(true, s"Room $roomId deleted.")
-          case _ =>
-            replyTo ! ActionPerformed(false, s"Error: Room $roomId not found or invalid.")
+          case true  =>
+            replyTo ! ActionPerformed(success = true, s"Room $roomId deleted.")
+          case false =>
+            replyTo ! ActionPerformed(success = false, s"Error: Room $roomId not found or could not be deleted.")
         }
         Behaviors.same
+
       case UpdateRoom(roomId, room, replyTo) =>
         dbUpdateRoom(xa, roomId, room).unsafeRunSync() match {
           case Right(rowsAffected) if rowsAffected > 0 =>
