@@ -1,10 +1,9 @@
 package fond2laclasse
 import akka.actor.ActorSystem
 import com.sksamuel.pulsar4s.akka.streams.source
-import com.sksamuel.pulsar4s.{ConsumerConfig, ConsumerMessage, MessageId, PulsarClient, Subscription, Topic}
+import com.sksamuel.pulsar4s.{ConsumerConfig, MessageId, PulsarClient, Subscription, Topic}
 import org.apache.pulsar.client.api.Schema
 import org.mongodb.scala.*
-import org.mongodb.scala.model.Filters.*
 import io.circe.parser.decode
 import io.circe.generic.auto.*
 import Helpers.*

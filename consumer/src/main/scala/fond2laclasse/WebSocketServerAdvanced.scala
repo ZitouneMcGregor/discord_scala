@@ -1,7 +1,7 @@
 package fond2laclasse
 import zio.*
 
-import zio.http.ChannelEvent.{ExceptionCaught, Read, UserEvent, UserEventTriggered}
+import zio.http.ChannelEvent.{ExceptionCaught, Read}
 import zio.http._
 import zio.http.codec.PathCodec.string
 
@@ -9,7 +9,7 @@ import zio.http.codec.PathCodec.string
 
 object WebSocketServerAdvanced {
 
-  val socketApp: WebSocketApp[Any] =
+  private val socketApp: WebSocketApp[Any] =
     Handler.webSocket { channel =>
       channel.receiveAll {
         case Read(WebSocketFrame.Text("end")) =>
@@ -36,10 +36,10 @@ object WebSocketServerAdvanced {
     }
 
 
-  val routes: Routes[Any, Response] =
+  private val routes: Routes[Any, Response] =
     Routes(
       Method.GET / "greet" / string("name") -> handler { (name: String, _: Request) =>
-        Response.text(s"Greetings ${name}!")
+        Response.text(s"Greetings $name!")
       },
       Method.GET / "subscriptions"          -> handler(socketApp.toResponse),
     )
