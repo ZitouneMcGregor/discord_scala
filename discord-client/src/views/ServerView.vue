@@ -15,6 +15,7 @@
           </button>
         </div>
       </div>
+
       <nav class="rooms-nav">
         <h2>Salons</h2>
         <ul>
@@ -32,16 +33,13 @@
           <button class="btn-primary" @click="addRoom">+</button>
         </div>
       </nav>
+
       <footer class="server-footer">
         <button class="btn-danger" @click="leaveCurrentServer">Quitter</button>
-        <button
-          v-if="isAdmin"
-          class="btn-danger"
-          @click="deleteServer"
-        >Supprimer</button>
+        <button v-if="isAdmin" class="btn-danger" @click="deleteServer">Supprimer</button>
       </footer>
 
-      <!-- Invite Modal Inline -->
+      <!-- Invite Modal -->
       <div v-if="showInviteModal">
         <div class="modal-overlay" @click="showInviteModal = false"></div>
         <div class="modal-box">
@@ -52,7 +50,7 @@
         </div>
       </div>
 
-      <!-- Manage Modal Inline -->
+      <!-- Manage Modal -->
       <div v-if="showGererModal">
         <div class="modal-overlay" @click="showGererModal = false"></div>
         <div class="modal-box">
@@ -65,24 +63,9 @@
             >
               <span>{{ userMap[user.user_id] || user.user_id }}</span>
               <div class="manage-actions">
-                <button
-                  class="btn-primary"
-                  v-if="!user.admin"
-                  @click="toggleAdmin(user.user_id, true)"
-                >Promouvoir</button>
-                <button
-                  class="btn-danger"
-                  v-if="user.admin"
-                  @click="toggleAdmin(user.user_id, false)"
-                >Retirer</button>
-                <button
-                  class="btn-danger"
-                  :disabled="user.user_id === authStore.user.id"
-                  @click="kickUser(user.user_id)"
-                >
-                  Expulser
-                </button>
-
+                <button class="btn-primary" v-if="!user.admin" @click="toggleAdmin(user.user_id, true)">Promouvoir</button>
+                <button class="btn-danger" v-if="user.admin" @click="toggleAdmin(user.user_id, false)">Retirer</button>
+                <button class="btn-danger" @click="kickUser(user.user_id)">Expulser</button>
               </div>
             </li>
           </ul>
@@ -101,16 +84,26 @@
           <h2>{{ selectedRoom.name }}</h2>
           <button class="btn" @click="showEditRoomModal = true">✎</button>
         </header>
-        <section class="messages-area">
-          <!-- Messages component goes here -->
+
+        <section class="messages-area" ref="messageContainer">
+          <div
+            v-for="msg in messages"
+            :key="msg.id + msg.ts"
+            :class="['message', { me: msg.from.id === currentUserId }]"
+          >
+            <div class="author">{{ msg.from.username }}</div>
+            <div class="content">{{ msg.content }}</div>
+            <div class="ts">{{ formatTime(msg.ts) }}</div>
+          </div>
         </section>
+
         <footer class="message-input">
           <input v-model="newMessage" placeholder="Message…" @keyup.enter="sendMessage" />
           <button class="btn-primary" @click="sendMessage">Envoyer</button>
         </footer>
       </div>
 
-      <!-- Edit Room Modal Inline -->
+      <!-- Edit Room Modal -->
       <div v-if="showEditRoomModal">
         <div class="modal-overlay" @click="showEditRoomModal = false"></div>
         <div class="modal-box">
@@ -143,11 +136,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../store/auth'
 import { useServerStore } from '../store/servers'
 import { useRoomStore } from '../store/room'
+import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
@@ -161,11 +155,13 @@ const newRoomName = ref('')
 const newMessage = ref('')
 const inviteUsername = ref('')
 const editRoomName = ref('')
-
 const showInviteModal = ref(false)
 const showGererModal = ref(false)
 const showEditRoomModal = ref(false)
+const messages = ref([])
+const messageContainer = ref(null)
 
+const currentUserId = computed(() => authStore.user.id)
 const isAdmin = computed(
   () => (serverStore.serverUsers.users?.some(u => u.user_id === authStore.user.id && u.admin)) || false
 )
@@ -175,8 +171,9 @@ onMounted(async () => {
   await serverStore.fetchServerUsers(serverId)
 })
 
-function selectRoom(room) {
+async function selectRoom(room) {
   selectedRoom.value = room
+  await loadMessages(room.id)
 }
 
 async function addRoom() {
@@ -214,7 +211,68 @@ async function kickUser(userId) {
 }
 
 async function sendMessage() {
-  // Stub: implement message send
+  if (!newMessage.value.trim() || !selectedRoom.value) return
+
+  const generatedId = `r${selectedRoom.value.id}`
+  const messageToSend = {
+    id: generatedId,
+    content: newMessage.value.trim(),
+    metadata: {
+      roomId: generatedId,
+      fromId: authStore.user.id.toString(),
+      fromUsername: authStore.user.username
+    }
+  }
+
+  try {
+    await axios.post(
+      'http://localhost:8081/message',
+      messageToSend,
+      {
+        auth: { username: 'foo', password: 'bar' }
+      }
+    )
+    messages.value.push({
+      id: generatedId,
+      from: {
+        id: authStore.user.id.toString(),
+        username: authStore.user.username
+      },
+      content: messageToSend.content,
+      ts: Date.now()
+    })
+    newMessage.value = ''
+    await nextTick()
+    messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+  } catch (err) {
+    console.error('Erreur envoi message serveur', err)
+  }
+}
+
+async function loadMessages(roomId) {
+  try {
+    const idPropre = `r${roomId}`
+    const { data } = await axios.get(`http://localhost:8083/server/${serverId}/room/${idPropre}/messages`, {
+      auth: { username: 'foo', password: 'bar' }
+    })
+    if (Array.isArray(data.messages)) {
+      messages.value = data.messages.map(m => ({
+        id: idPropre,
+        from: {
+          id: m.metadata.fromId,
+          username: m.metadata.fromUsername
+        },
+        content: m.content,
+        ts: new Date(m.timestamp).getTime()
+      }))
+      await nextTick()
+      messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+    } else {
+      messages.value = []
+    }
+  } catch (err) {
+    console.error('Erreur chargement messages serveur', err)
+  }
 }
 
 async function updateSelectedRoom() {
@@ -230,16 +288,24 @@ async function deleteSelectedRoom() {
 }
 
 const userMap = computed(() => serverStore.userMap)
+
+function formatTime(ts) {
+  const d = new Date(ts)
+  return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`
+}
 </script>
 
 <style scoped>
+/* ---------------------------------------------------------------- Layout */
 .server-layout {
   display: grid;
   grid-template-columns: 250px 1fr 200px;
   height: 100vh;
-  background: #36393f;
+  background: #36393f;              /* même bg global */
   color: #dcddde;
 }
+
+/* ---------------------------------------------------------------- Panels */
 .left-panel,
 .right-panel {
   background: #2f3136;
@@ -251,25 +317,35 @@ const userMap = computed(() => serverStore.userMap)
   flex-direction: column;
   background: #36393f;
   padding: 16px;
+  min-width: 0;                     /* évite le débordement */
 }
-/* Header */
+
+/* ---------------------------------------------------------------- Header */
 .server-header {
   display: flex;
-  flex-direction: column;
-  margin-bottom: 16px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 12px;
 }
 .server-header h1 {
-  margin: 0 0 8px 0;
-  font-size: 1.5rem;
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1.2;
+  flex: 1;
 }
 .server-actions {
   display: flex;
   gap: 8px;
 }
-/* Rooms navigation */
+
+/* ---------------------------------------------------------------- Rooms  */
 .rooms-nav h2 {
-  margin-bottom: 8px;
-  font-size: 1.25rem;
+  margin: 0 0 6px;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #949ba4;
 }
 .rooms-nav ul {
   list-style: none;
@@ -277,73 +353,83 @@ const userMap = computed(() => serverStore.userMap)
   margin: 0;
 }
 .rooms-nav li {
-  padding: 10px;
+  padding: 8px 10px;
   margin-bottom: 4px;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.15s;
 }
-.rooms-nav li:hover {
-  background: #42454a;
-}
-.rooms-nav li.selected {
-  background: #5865f2;
-}
+.rooms-nav li:hover       { background: #393c43; }   /* même hover global */
+.rooms-nav li.selected    { background: #5865f2; }
+
 .add-room {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
+  margin-top: 10px;
 }
 .add-room input {
   flex: 1;
   padding: 8px;
-  border-radius: 4px;
   border: 1px solid #555;
-  background: #2f3136;
+  border-radius: 4px;
+  background: #303338;
   color: #dcddde;
 }
-.add-room button {
-  width: 40px;
-}
-/* Footer */
+.add-room button { width: 38px; }
+
+/* ---------------------------------------------------------------- Footer */
 .server-footer {
   margin-top: auto;
   display: flex;
   gap: 8px;
 }
-/* Main panel: no selection */
+
+/* ------------------------------------------------------ No-selection msg */
 .no-selection {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #72767d;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
 }
-/* Room content */
-.room-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
+
+/* ------------------------------------------------ Room content & header */
+.room-content { display: flex; flex-direction: column; height: 100%; }
 .room-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
-.room-header h2 {
-  margin: 0;
-  font-size: 1.5rem;
-}
+.room-header h2 { margin: 0; font-size: 1.25rem; flex: 1; }
+
+/* ----------------------------------------------------------- Messages    */
 .messages-area {
   flex: 1;
   background: #2f3136;
   border-radius: 4px;
-  padding: 16px;
+  padding: 14px;
   overflow-y: auto;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
+.message {
+  max-width: 65%;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  background: #202225;
+  line-height: 1.35;
+}
+.message.me {
+  margin-left: auto;
+  background: #5865f2;
+  color: #fff;
+}
+.author       { font-weight: 600; margin-bottom: 2px; }
+.ts           { font-size: 0.75rem; margin-top: 4px; color: #8e9297; text-align: right; }
+
+/* -------------------------------------------------------- Input message */
 .message-input {
   display: flex;
   gap: 8px;
@@ -351,18 +437,20 @@ const userMap = computed(() => serverStore.userMap)
 .message-input input {
   flex: 1;
   padding: 10px;
-  border-radius: 4px;
   border: 1px solid #555;
-  background: #2f3136;
+  border-radius: 4px;
+  background: #303338;
   color: #dcddde;
 }
-.message-input button {
-  padding: 10px 16px;
-}
-/* Right panel: users */
+.message-input button { padding: 10px 18px; }
+
+/* -------------------------------------------------------- Users list    */
 .right-panel h3 {
-  margin: 0 0 12px 0;
-  font-size: 1.25rem;
+  margin: 0 0 10px;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #949ba4;
 }
 .right-panel ul {
   list-style: none;
@@ -370,98 +458,77 @@ const userMap = computed(() => serverStore.userMap)
   margin: 0;
 }
 .right-panel li {
-  padding: 8px;
-  border-radius: 4px;
-  margin-bottom: 6px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: background 0.2s;
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  transition: background 0.15s;
 }
-.right-panel li:hover {
-  background: #42454a;
-}
+.right-panel li:hover { background: #393c43; }
 .badge {
   background: #43b581;
   color: #fff;
   padding: 2px 6px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 0.7rem;
 }
-/* Buttons */
+
+/* -------------------------------------------------------------- Buttons */
 .btn,
 .btn-primary,
 .btn-danger {
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  padding: 8px 16px;
-  transition: background 0.2s;
+  font-size: 0.85rem;
+  padding: 7px 14px;
+  transition: background 0.15s;
 }
-.btn-primary {
-  background: #5865F2;
-  color: #fff;
-}
-.btn-primary:hover {
-  background: #4752c4;
-}
-.btn-danger {
-  background: #f04747;
-  color: #fff;
-}
-.btn-danger:hover {
-  background: #ce3c3c;
-}
-/* Modals inline */
+.btn-primary  { background: #5865f2; color: #fff; }
+.btn-primary:hover { background: #4752c4; }
+.btn-danger   { background: #f04747; color: #fff; }
+.btn-danger:hover  { background: #ce3c3c; }
+
+/* -------------------------------------------------------------- Modals  */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background: rgba(0,0,0,0.5);
   z-index: 1000;
 }
 .modal-box {
   position: fixed;
-  top: 50%;
-  left: 50%;
+  top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  background: #36393f;
+  width: 320px;
+  background: #2f3136;
   padding: 24px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   z-index: 1001;
-  width: 320px;
 }
-.modal-box h3 {
-  margin-bottom: 16px;
-  font-size: 1.25rem;
-}
-.modal-box input {
+.modal-box h3 { margin: 0 0 14px; font-size: 1.1rem; }
+.modal-box input,
+.modal-box select {
   width: 100%;
   padding: 10px;
-  margin-bottom: 16px;
-  border-radius: 4px;
+  margin-bottom: 14px;
   border: 1px solid #555;
-  background: #2f3136;
+  border-radius: 4px;
+  background: #303338;
   color: #dcddde;
 }
-.edit-room-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-bottom: 16px;
-}
+.edit-room-actions { display: flex; gap: 10px; justify-content: center; margin-bottom: 12px; }
+
+/* ----------------------------------------------------- Manage-user list */
 .manage-user {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #555;
+  padding: 6px 0;
+  border-bottom: 1px solid #444;
 }
-.manage-actions button {
-  margin-left: 8px;
-}
+.manage-actions button { margin-left: 6px; }
 </style>

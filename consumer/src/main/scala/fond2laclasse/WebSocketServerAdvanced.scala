@@ -46,9 +46,10 @@ object WebSocketServerAdvanced {
 
   def startWsServer(): Unit = {
     Unsafe.unsafe { implicit u =>
-      Runtime.default.unsafe.run(Server.serve(routes).provide(Server.default).forkDaemon)
+      val configLayer = Server.defaultWithPort(8082)
+      Runtime.default.unsafe.run(Server.serve(routes).provide(configLayer).forkDaemon)
     }
-    println("✅ WebSocket server started at ws://localhost:8080/subscriptions")
+    println("✅ WebSocket server started at ws://localhost:8082/subscriptions")
   }
 }
 

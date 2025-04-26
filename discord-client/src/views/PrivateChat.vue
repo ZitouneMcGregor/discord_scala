@@ -60,9 +60,12 @@
       <div class="messages" ref="messageContainer">
         <div
           v-for="msg in messages"
-          :key="msg.id"
-          :class="['message', { me: msg.from === currentUserId }]"
+          :key="msg.id + msg.ts"
+          :class="['message', { me: msg.from.id === currentUserId }]"
         >
+          <div class="author">
+            {{ msg.from.username }}
+          </div>
           <div class="content">{{ msg.content }}</div>
           <div class="ts">{{ formatTime(msg.ts) }}</div>
         </div>
@@ -89,6 +92,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useAuthStore } from '../store/auth'
 import { usePrivateChatStore } from '../store/privateChats'
+import api from '../plugins/axios'
 import axios from 'axios'
 
 const authStore = useAuthStore()
@@ -103,23 +107,23 @@ const selectedUser = ref(null)
 const selectedChat = ref(null)
 const messages = ref([])
 const newMessage = ref('')
-
 const chats = computed(() => privateChatStore.privateChats)
-
-// Map des pseudos par ID
 const userNames = ref({})
+const messageContainer = ref(null)
 
 onMounted(async () => {
   await privateChatStore.fetchPrivateChats(currentUserId.value)
-  // charger les pseudos des autres users
+
   const otherIds = [...new Set(privateChatStore.privateChats
     .map(c => c.user_id_1 === currentUserId.value ? c.user_id_2 : c.user_id_1))]
+
   await Promise.all(otherIds.map(async id => {
     try {
-      const res = await axios.get(`http://localhost:8080/users/id/${id}`)
+      const res = await api.get(`/users/id/${id}`)
       if (res.data) userNames.value[id] = res.data.username
     } catch {}
   }))
+
   loadingChats.value = false
 })
 
@@ -135,11 +139,10 @@ watch(searchTerm, (val) => {
 })
 
 let debounce
+
 async function fetchUserSuggestions() {
   try {
-    const { data } = await axios.get(
-      `http://localhost:8080/users/search?username=${encodeURIComponent(searchTerm.value)}`
-    )
+    const { data } = await api.get(`/users/search?username=${encodeURIComponent(searchTerm.value)}`)
     const list = Array.isArray(data) ? data : data.users
     suggestions.value = list.slice(0, 3)
     showSuggestions.value = suggestions.value.length > 0
@@ -177,7 +180,6 @@ async function createChat() {
   )
   if (ok) {
     await privateChatStore.fetchPrivateChats(currentUserId.value)
-    // mettre à jour les pseudos
     const otherId = selectedUser.value.id
     userNames.value[otherId] = selectedUser.value.username
     searchTerm.value = ''
@@ -204,25 +206,73 @@ async function deleteChat(chatId) {
 }
 
 async function loadMessages(chatId) {
-  messages.value = []
-  messages.value = [
-    { id: 1, from: currentUserId.value, content: 'Demo message', ts: Date.now() - 60000 }
-  ]
-  await nextTick()
-  messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+  try {
+    const idPropre = `pc${chatId}`
+    const { data } = await axios.get(`http://localhost:8083/privateChat/${idPropre}/messages`, {
+      auth: { username: 'foo', password: 'bar' }
+    })
+    if (Array.isArray(data.messages)) {
+      messages.value = data.messages.map(m => ({
+        id: idPropre,
+        from: {
+          id: m.metadata.fromId,
+          username: m.metadata.fromUsername
+        },
+        content: m.content,
+        ts: new Date(m.timestamp).getTime()
+      }))
+    } else {
+      messages.value = []
+    }
+    await nextTick()
+    messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+  } catch (err) {
+    console.error('Erreur chargement messages', err)
+  }
 }
 
 async function sendMessage() {
   if (!newMessage.value.trim() || !selectedChat.value) return
-  messages.value.push({
-    id: Date.now(),
-    from: currentUserId.value,
+
+  const generatedId = `pc${selectedChat.value.id}`
+  const messageToSend = {
+    id: generatedId,
     content: newMessage.value.trim(),
-    ts: Date.now()
-  })
-  newMessage.value = ''
-  await nextTick()
-  messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+    metadata: {
+      chatId: generatedId,
+      fromId: currentUserId.value.toString(),
+      fromUsername: authStore.user.username
+    }
+  }
+
+  try {
+    await axios.post(
+      'http://localhost:8081/message',
+      messageToSend,
+      {
+        auth: {
+          username: 'foo',
+          password: 'bar'
+        }
+      }
+    )
+
+    messages.value.push({
+      id: generatedId,
+      from: {
+        id: currentUserId.value.toString(),
+        username: authStore.user.username
+      },
+      content: messageToSend.content,
+      ts: Date.now()
+    })
+    newMessage.value = ''
+    await nextTick()
+    messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+  } catch (err) {
+    console.error('Erreur envoi message', err)
+    alert('Erreur envoi message')
+  }
 }
 
 function formatTime(ts) {
@@ -234,11 +284,10 @@ function getOtherPseudo(chat) {
   const otherId = chat.user_id_1 === currentUserId.value ? chat.user_id_2 : chat.user_id_1
   return userNames.value[otherId] || `User#${otherId}`
 }
-
-const messageContainer = ref(null)
 </script>
 
 <style scoped>
+/* Ton style Discord like */
 .private-home-container {
   display: flex;
   height: 100vh;
@@ -271,6 +320,7 @@ const messageContainer = ref(null)
 .message { max-width:60%; margin-bottom:10px; padding:10px; border-radius:6px; background:#202225; }
 .message.me { margin-left:auto; background:#5865F2; }
 .message .ts { font-size:0.75rem; color:#72767d; margin-top:4px; }
+.author { font-weight: bold; margin-bottom: 4px; }
 .message-form { display:flex; gap:10px; }
 .btn-primary { background:#5865F2; color:#fff; border:none; border-radius:0 4px 4px 0; padding:8px 16px; cursor:pointer; }
 .btn-primary:hover { background:#4752c4; }
