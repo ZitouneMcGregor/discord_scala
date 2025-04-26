@@ -6,7 +6,13 @@
         <h1>{{ serverStore.server?.name }}</h1>
         <div class="server-actions">
           <button class="btn-primary" @click="showInviteModal = true">Inviter</button>
-          <button class="btn-primary" @click="showGererModal = true">Gérer</button>
+          <button
+            v-if="isAdmin"
+            class="btn-primary"
+            @click="showGererModal = true"
+          >
+            Gérer
+          </button>
         </div>
       </div>
       <nav class="rooms-nav">
@@ -71,8 +77,12 @@
                 >Retirer</button>
                 <button
                   class="btn-danger"
+                  :disabled="user.user_id === authStore.user.id"
                   @click="kickUser(user.user_id)"
-                >Expulser</button>
+                >
+                  Expulser
+                </button>
+
               </div>
             </li>
           </ul>
