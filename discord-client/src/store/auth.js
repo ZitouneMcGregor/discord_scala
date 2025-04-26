@@ -1,104 +1,86 @@
+// src/stores/auth.js
 import { defineStore } from 'pinia';
-import axios from 'axios';
+import api from '../plugins/axios';
 
 export const useAuthStore = defineStore('auth', {
-    state: () => ({
-        user: JSON.parse(localStorage.getItem('user')) || null
-    }),
-    
-    getters: {
-        isAuthenticated: (state) => !!state.user
+  state: () => ({
+    user: JSON.parse(localStorage.getItem('user')) || null
+  }),
+
+  getters: {
+    isAuthenticated: state => !!state.user
+  },
+
+  actions: {
+    async login(username, password) {
+      try {
+        // on récupère l'user pour vérifier le flag deleted
+        const res = await api.get(`/users/${username}`);
+        const u = res.data;
+        if (u && !u.deleted) {
+          // on considère que le back a déjà validé le password via BasicAuth
+          this.user = { id: u.id, username: u.username };
+          localStorage.setItem('user', JSON.stringify(this.user));
+          return { success: true };
+        } else if (u && u.deleted) {
+          return { success: false, message: 'Compte supprimé.' };
+        }
+      } catch (err) {
+        // 404 ou 401 → mauvais identifiants  
+        return { success: false, message: 'Identifiants incorrects.' };
+      }
+      return { success: false, message: 'Erreur de connexion.' };
     },
 
-    actions: {
-        async login(username, password) {
-            try {
-                const response = await axios.get(`http://localhost:8080/users/${username}`);
-                if (response.data.password === password) {
-                    this.user = response.data;
-                    localStorage.setItem('user', JSON.stringify(response.data));
-                    return true;
-                }
-            } catch (error) {
-                console.error('Login error', error);
-            }
-            return false;
-        },
+    logout() {
+      this.user = null;
+      localStorage.removeItem('user');
+    },
 
-        logout() {
-            this.user = null;
-            localStorage.removeItem('user');
-        },
-
-        async register(username, password) {
-            try {
-                const response = await axios.post('http://localhost:8080/users', { username, password });
-        
-                if (response.data.success === true) {
-                    return { success: true, message: "Inscription réussie !" };
-                }else if (response.data.success === false) {
-                    return { success: false, message: response.data.description };
-                }
-        
-                return { success: false, message: "Réponse inattendue du serveur." };
-        
-            } catch (error) {
-                if (error.response) {
-                 return { success: false, message: "Erreur interne du serveur. Réessayez plus tard." }
-                }
-        
-                return { success: false, message: "Problème de connexion. Vérifiez votre réseau." };
-            }
-        },
-        
-        async updateUser(userName, { newUsername, newPassword }) {
-            try {
-              const response = await axios.put(`http://localhost:8080/users/${userName}`, {
-                username: newUsername,
-                password: newPassword
-              });
-              if (response.data.success === true) {
-                this.user.username = newUsername;
-                localStorage.setItem('user', JSON.stringify(this.user));
-                return true;
-              }else if (response.data.success === false) {
-                return false;
-
-              }
-            } catch (error) {
-              console.error('Erreur updateUser', error);
-            }
-            return false;
-        },
-        async deleteAccount(userName) {
-            try {
-              const response = await axios.delete(`http://localhost:8080/users/${userName}`);
-              if (response.data.success === true) {
-                this.user = null;
-                localStorage.removeItem('user');
-                return true;
-              }else{
-                return false;
-              }
-            } catch (error) {
-              console.error('Erreur deleteAccount', error);
-            }
-            return false;
-        },
-        async getUser(username) {
-            try {
-                const response = await axios.get(`http://localhost:8080/users/${username}`); // Assurez-vous que l'URL est correcte ici
-                if (response.status === 200) {
-                    return response.data; // L'utilisateur retourné contient un champ "deleted"
-                } else {
-                    throw new Error('Utilisateur introuvable');
-                }
-            } catch (error) {
-                console.error(error);
-                return null;
-            }
+    async register(username, password) {
+      try {
+        const res = await api.post('/users', { username, password });
+        if (res.data.success) {
+          return { success: true, message: 'Inscription réussie !' };
+        } else {
+          return { success: false, message: res.data.description };
         }
-              
+      } catch (err) {
+        return { success: false, message: 'Erreur réseau ou serveur.' };
+      }
+    },
 
+    async updateUser(newUsername, newPassword) {
+      if (!this.user) return { success: false };
+      try {
+        const res = await api.put(`/users/${this.user.username}`, {
+          username: newUsername,
+          password: newPassword
+        });
+        if (res.data.success) {
+          this.user.username = newUsername;
+          localStorage.setItem('user', JSON.stringify(this.user));
+          return { success: true };
+        } else {
+          return { success: false, message: res.data.description };
+        }
+      } catch {
+        return { success: false, message: 'Erreur réseau.' };
+      }
+    },
+
+    async deleteAccount() {
+      if (!this.user) return { success: false };
+      try {
+        const res = await api.delete(`/users/${this.user.username}`);
+        if (res.data.success) {
+          this.logout();
+          return { success: true };
+        }
+      } catch {
+        /* ignore */
+      }
+      return { success: false, message: 'Impossible de supprimer le compte.' };
     }
+  }
 });

@@ -1,6 +1,6 @@
 // store/privateChats.js
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import api from '../plugins/axios';
 
 export const usePrivateChatStore = defineStore('privateChats', {
   state: () => ({
@@ -9,13 +9,10 @@ export const usePrivateChatStore = defineStore('privateChats', {
   actions: {
     async fetchPrivateChats(userId) {
       try {
-        const response = await axios.get(`http://localhost:8080/privateChat/user/${userId}`)
-        if (response.status === 200) {
-          this.privateChats = response.data
-        }
+        const { data } = await api.get(`http://localhost:8080/privateChat/user/${userId}`)
+        this.privateChats = data.privateChats
       } catch (error) {
         console.error('Erreur fetchPrivateChats', error)
-
       }
     },
 
@@ -25,7 +22,7 @@ export const usePrivateChatStore = defineStore('privateChats', {
           user_id_1: userId1,
           user_id_2: userId2
         }
-        const response = await axios.post('http://localhost:8080/privateChat', newChat)
+        const response = await api.post('http://localhost:8080/privateChat', newChat)
         if (response.status === 201) {
           await this.fetchPrivateChats(userId1)
           return true
@@ -38,7 +35,7 @@ export const usePrivateChatStore = defineStore('privateChats', {
 
     async deletePrivateChat(userId, chatId) {
       try {
-        const response = await axios.delete(`http://localhost:8080/privateChat/${userId}/${chatId}`)
+        const response = await api.delete(`http://localhost:8080/privateChat/${userId}/${chatId}`)
         if (response.status === 200) {
           this.privateChats = this.privateChats.filter(c => c.id !== chatId)
         }

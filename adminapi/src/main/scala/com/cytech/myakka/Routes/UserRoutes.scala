@@ -31,8 +31,6 @@ class UserRoutes(userRegistry: ActorRef[Command], auth: BasicAuthConfig)(implici
 
   //#user-routes-class
 
-
-
   // If ask takes more time than this to complete the request is failed
   private given Timeout = Timeout.create(system.settings.config.getDuration("app.routes.ask-timeout"))
 
@@ -54,6 +52,9 @@ class UserRoutes(userRegistry: ActorRef[Command], auth: BasicAuthConfig)(implici
   def updateUser(username: String, newUsername: String, newPassword : String): Future[ActionPerformed] =
     userRegistry.ask(UpdateUser(username,newUsername,newPassword,_))
 
+  def searchUsers(prefix: String): Future[Users] =
+    userRegistry.ask(SearchUsers(prefix, _))
+
   def myUserPassAuthenticator(credentials: Credentials): Option[String] = {
     credentials match {
       case p @ Credentials.Provided(id) if id == auth.user && p.verify(auth.password) => Some(id)
@@ -62,13 +63,10 @@ class UserRoutes(userRegistry: ActorRef[Command], auth: BasicAuthConfig)(implici
   }
 
   //#all-routes
-  //#users-get-post
-  //#users-get-delete
   val userRoutes: Route  = cors() {
   pathPrefix("users") {
     authenticateBasic(realm = "secure  site", myUserPassAuthenticator) { _ =>
       concat(
-        //#users-get-delete
         pathEnd {
           concat(
             get {
@@ -82,25 +80,19 @@ class UserRoutes(userRegistry: ActorRef[Command], auth: BasicAuthConfig)(implici
               }
             })
         },
-        //#users-get-delete
-        //#users-get-post
         path(Segment) { username =>
           concat(
             get {
-              //#retrieve-user-info
               rejectEmptyResponse {
                 onSuccess(getUser(username)) { response =>
                   complete(response.maybeUser)
                 }
               }
-              //#retrieve-user-info
             },
             delete {
-              //#users-delete-logic
               onSuccess(deleteUser(username)) { performed =>
                 complete(StatusCodes.OK, performed)
               }
-              //#users-delete-logic
             },
             put{
               entity(as[User]){ user =>
@@ -119,13 +111,20 @@ class UserRoutes(userRegistry: ActorRef[Command], auth: BasicAuthConfig)(implici
                 }
               }
             }
+          },
+        path("search") {
+            parameter("username".as[String]) { prefix =>
+              get {
+                onSuccess(searchUsers(prefix)) { users =>
+                  complete(users) 
+                }
+              }
+            }
           }
         
         
         )
     }
-    //#users-get-delete
   }
-  //#all-routes
 }
 }

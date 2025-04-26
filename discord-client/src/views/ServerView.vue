@@ -1,680 +1,457 @@
 <template>
   <div class="server-layout">
-    <!-- Colonne de gauche -->
-    <div class="left-panel">
-      <h1>Serveur</h1>
-      <button class="btn-primary" @click="openInviteModal">Inviter des gens</button>
-      <button class="btn-primary" @click="openGererModal">Gerer les users</button>
-      <h1 v-if="showGererModal">TEST</h1>
-      <!-- Boutons quitter/supprimer le serveur -->
-      <button class="btn-danger" style="margin-top: 20px;" @click="leaveCurrentServer">
-        Quitter le serveur
-      </button>
-      <button
-  v-if="serverStore.serverUsers.users?.some(u => u.id === authStore.user.id && u.admin)"
-  class="btn-danger"
-  style="margin-top: 20px;"
-  @click="deleteServer"
->
-  Supprimer le serveur
-</button>
-
-
-      <h2>Rooms du serveur {{ serverId }}</h2>
-      <ul>
-        <li
-          v-for="room in roomStore.rooms"
-          :key="room.id"
-          :class="{ selected: selectedRoom?.id === room.id }"
-          @click="selectRoom(room)"
-        >
-          {{ room.name }}
-        </li>
-      </ul>
-      <div class="add-room">
-        <input v-model="newRoomName" placeholder="Nom de la room" />
-        <button class="btn-primary" @click="addRoom">Ajouter</button>
-      </div>
-
-      <!-- Bouton d'ouverture du modal -->
-      <button class="btn-primary" @click="openEditServerModal" style="margin-top: 20px;">
-        Modifier le serveur
-      </button>
-
-      <!-- Modale d'édition du serveur -->
-      <div v-if="showEditServerModal">
-        <div class="modal-overlay" @click="closeEditServerModal"></div>
-        <div class="editserv-modal">
-          <h3>Modifier le serveur</h3>
-          <input v-model="updatedServerName" placeholder="Nouveau nom du serveur" />
-          <input v-model="updatedServerImage" placeholder="Nouvelle URL d'image" />
-          <button class="btn-primary modal-btn" @click="updateServerInfo">Mettre à jour</button>
+    <!-- Left Panel: Server Info + Rooms List -->
+    <aside class="left-panel">
+      <div class="server-header">
+        <h1>{{ serverStore.server?.name }}</h1>
+        <div class="server-actions">
+          <button class="btn-primary" @click="showInviteModal = true">Inviter</button>
+          <button class="btn-primary" @click="showGererModal = true">Gérer</button>
         </div>
       </div>
+      <nav class="rooms-nav">
+        <h2>Salons</h2>
+        <ul>
+          <li
+            v-for="room in roomStore.rooms"
+            :key="room.id"
+            :class="{ selected: selectedRoom && selectedRoom.id === room.id }"
+            @click="selectRoom(room)"
+          >
+            {{ room.name }}
+          </li>
+        </ul>
+        <div class="add-room">
+          <input v-model="newRoomName" placeholder="Nouveau salon" />
+          <button class="btn-primary" @click="addRoom">+</button>
+        </div>
+      </nav>
+      <footer class="server-footer">
+        <button class="btn-danger" @click="leaveCurrentServer">Quitter</button>
+        <button
+          v-if="isAdmin"
+          class="btn-danger"
+          @click="deleteServer"
+        >Supprimer</button>
+      </footer>
 
-      <!-- Modale d'invitation -->
+      <!-- Invite Modal Inline -->
       <div v-if="showInviteModal">
-        <!-- Overlay -->
-        <div class="modal-overlay" @click="closeInviteModal"></div>
-        <!-- Contenu de la modale -->
-        <div class="invite-modal">
-          <h3>Inviter des gens</h3>
-          <input
-            v-model="inviteInput"
-            placeholder="Entrez l'username de la personne à inviter"
-          />
-          <!-- Liste dynamique des utilisateurs filtrés -->
-          <ul v-if="filteredUsers.length">
-            <li
-              v-for="user in filteredUsers"
-              :key="user.id"
-              @click="selectUser(user)"
-            >
-              {{ user.username }}
-            </li>
-          </ul>
-          <button class="btn-primary modal-btn" @click="addUserOnServer">Inviter</button>
+        <div class="modal-overlay" @click="showInviteModal = false"></div>
+        <div class="modal-box">
+          <h3>Inviter un utilisateur</h3>
+          <input v-model="inviteUsername" placeholder="Username" />
+          <button class="btn-primary" @click="addUserOnServer">Inviter</button>
+          <button class="btn" @click="showInviteModal = false">Annuler</button>
         </div>
       </div>
 
-      <!-- Modale de gestion -->
-      <!-- Modale de gestion -->
+      <!-- Manage Modal Inline -->
       <div v-if="showGererModal">
-        <div class="modal-overlay" @click="closeGererModal"></div>
-        <div class="invite-modal">
-          <button @click="closeGererModal">X</button>
+        <div class="modal-overlay" @click="showGererModal = false"></div>
+        <div class="modal-box">
           <h3>Gérer les utilisateurs</h3>
-
-          <ul v-if="serverStore.serverUsers.users?.length">
+          <ul>
             <li
-              v-for="user in serverStore.serverUsers.users"
-              :key="user.id"
-              style="display: flex; justify-content: space-between; align-items: center; gap: 5px;"
+              v-for="user in serverStore.serverUsers.users || []"
+              :key="user.user_id"
+              class="manage-user"
             >
-            <span>{{ serverStore.userMap[user.user_id] || 'Utilisateur inconnu' }}</span>
-            <div style="display: flex; gap: 5px;">
-              <button
-  class="btn-primary"
-  v-if="!user.admin"
-  @click="serverStore.toggleAdmin(serverId, user.user_id, true)"
->
-  Promouvoir
-</button>
-<button
-  class="btn-danger"
-  v-if="user.admin"
-  @click="serverStore.toggleAdmin(serverId, user.user_id, false)"
->
-  Retirer admin
-</button>
-<button
-  class="btn-danger"
-  @click="serverStore.kickUser(serverId, user.user_id)"
->
-  Kick
-</button>
-
+              <span>{{ userMap[user.user_id] || user.user_id }}</span>
+              <div class="manage-actions">
+                <button
+                  class="btn-primary"
+                  v-if="!user.admin"
+                  @click="toggleAdmin(user.user_id, true)"
+                >Promouvoir</button>
+                <button
+                  class="btn-danger"
+                  v-if="user.admin"
+                  @click="toggleAdmin(user.user_id, false)"
+                >Retirer</button>
+                <button
+                  class="btn-danger"
+                  @click="kickUser(user.user_id)"
+                >Expulser</button>
               </div>
             </li>
           </ul>
+          <button class="btn" @click="showGererModal = false">Fermer</button>
         </div>
       </div>
+    </aside>
 
+    <!-- Main Panel: Chat/Room Content -->
+    <main class="main-panel">
+      <div v-if="!selectedRoom" class="no-selection">
+        <p>Sélectionnez un salon à gauche</p>
+      </div>
+      <div v-else class="room-content">
+        <header class="room-header">
+          <h2>{{ selectedRoom.name }}</h2>
+          <button class="btn" @click="showEditRoomModal = true">✎</button>
+        </header>
+        <section class="messages-area">
+          <!-- Messages component goes here -->
+        </section>
+        <footer class="message-input">
+          <input v-model="newMessage" placeholder="Message…" @keyup.enter="sendMessage" />
+          <button class="btn-primary" @click="sendMessage">Envoyer</button>
+        </footer>
+      </div>
 
-
-    </div>
-
-    <!-- Colonne du milieu -->
-    <div class="middle-panel">
-      <div class="right-panel">
-        <div v-if="!selectedRoom" class="no-room-selected">
-          <p>Sélectionnez une room pour la modifier ou la supprimer</p>
-        </div>
-        <div v-else>
-          <!-- Overlay pour fermer la modale d'édition -->
-          <div class="modal-overlay" @click="selectedRoom = null"></div>
-          <div class="room-edit-panel">
-            <h3>Modifier la room : {{ selectedRoom.name }}</h3>
-            <input
-              v-model="editRoomName"
-              placeholder="Nouveau nom de la room"
-            />
-            <div class="buttons">
-              <button class="btn-primary" @click="updateSelectedRoom">
-                Enregistrer
-              </button>
-              <button class="btn-danger" @click="deleteSelectedRoom">
-                Supprimer
-              </button>
-            </div>
+      <!-- Edit Room Modal Inline -->
+      <div v-if="showEditRoomModal">
+        <div class="modal-overlay" @click="showEditRoomModal = false"></div>
+        <div class="modal-box">
+          <h3>Modifier salon</h3>
+          <input v-model="editRoomName" placeholder="Nouveau nom" />
+          <div class="edit-room-actions">
+            <button class="btn-primary" @click="updateSelectedRoom">Enregistrer</button>
+            <button class="btn-danger" @click="deleteSelectedRoom">Supprimer</button>
           </div>
+          <button class="btn" @click="showEditRoomModal = false">Annuler</button>
         </div>
       </div>
-    </div>
+    </main>
 
-    <!-- Colonne de droite -->
-    <div class="right-panel">
+    <!-- Right Panel: Users List -->
+    <aside class="right-panel">
       <h3>Utilisateurs</h3>
       <ul>
         <li
-          v-for="user in serverStore.serverUsers"
-          :key="user.id"
+          v-for="user in serverStore.serverUsers.users"
+          :key="user.user_id"
           :class="{ admin: user.admin }"
         >
-          {{ user.username }}
+          {{ userMap[user.user_id] || user.user_id }}
+          <span v-if="user.admin" class="badge">Admin</span>
         </li>
       </ul>
-    </div>
+    </aside>
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
 import { useAuthStore } from '../store/auth'
 import { useServerStore } from '../store/servers'
 import { useRoomStore } from '../store/room'
-import { useUserStore } from '../store/user'
 
-export default {
-  setup() {
-    const route = useRoute()
-    const router = useRouter()
-    const authStore = useAuthStore()
-    const serverStore = useServerStore()
-    const roomStore = useRoomStore()
-    const userStore = useUserStore()
+const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
+const serverStore = useServerStore()
+const roomStore = useRoomStore()
 
-    const serverId = route.params.serverId
-    const selectedRoom = ref(null)
-    const newRoomName = ref('')
-    const editRoomName = ref('')
-    const updatedServerName = ref('')
-    const updatedServerImage = ref('')
+const serverId = Number(route.params.serverId)
+const selectedRoom = ref(null)
+const newRoomName = ref('')
+const newMessage = ref('')
+const inviteUsername = ref('')
+const editRoomName = ref('')
 
-    const roomToEdit = ref(null)
-    const showRoomModal = ref(false)
+const showInviteModal = ref(false)
+const showGererModal = ref(false)
+const showEditRoomModal = ref(false)
 
-    // Modale serveur
-    const showEditServerModal = ref(false)
-    function openEditServerModal() {
-      updatedServerName.value = serverStore.server?.name || ''
-      updatedServerImage.value = serverStore.server?.image || ''
-      showEditServerModal.value = true
-    }
+const isAdmin = computed(
+  () => (serverStore.serverUsers.users?.some(u => u.user_id === authStore.user.id && u.admin)) || false
+)
 
-    function closeEditServerModal() {
-      showEditServerModal.value = false
-    }
+onMounted(async () => {
+  await roomStore.fetchRooms(serverId)
+  await serverStore.fetchServerUsers(serverId)
+})
 
-    async function updateServerInfo() {
-      if (!updatedServerName.value.trim() && !updatedServerImage.value.trim()) return
-      await serverStore.updateServer({
-        id: Number(serverId),
-        name: updatedServerName.value.trim(),
-        image: updatedServerImage.value.trim()
-      })
-      closeEditServerModal()
-    }
-
-    // Gestion de la modale d'invitation
-    const showInviteModal = ref(false)
-    const showGererModal = ref(false)
-    const inviteInput = ref('')
-    const selectedUser = ref(null)
-
-    // Filtre des utilisateurs pour l'invitation
-    const filteredUsers = computed(() => {
-      if (!inviteInput.value) return []
-      return userStore.inviteUsers.filter(user =>
-        user.username.toLowerCase().includes(inviteInput.value.toLowerCase())
-      )
-    })
-
-    function openInviteModal() {
-      showInviteModal.value = true
-      userStore.fetchInviteUsers(Number(serverId))
-    }
-
-    function openGererModal() {
-        showGererModal.value = true;
-        const userIds = serverStore.serverUsers.users?.map(u => u.user_id) || [];
-        serverStore.fetchUserMap(userIds);
-      }
-
-
-    function closeGererModal() {
-      showGererModal.value = false
-    }
-
-    function closeInviteModal() {
-      showInviteModal.value = false
-      inviteInput.value = ''
-      selectedUser.value = null
-    }
-
-    function selectUser(user) {
-      selectedUser.value = user
-      inviteInput.value = user.username
-    }
-
-    async function addUserOnServer() {
-      if (!selectedUser.value) {
-        alert("Veuillez sélectionner un utilisateur dans la liste.")
-        return
-      }
-      try {
-        await serverStore.addUserOnServer(selectedUser.value.id, Number(serverId))
-        alert("Utilisateur ajouté !")
-        closeInviteModal()
-        // Recharger la liste des users du serveur ?
-        serverStore.fetchServerUsers(serverId)
-      } catch (error) {
-        console.error("Erreur lors de l'ajout de l'utilisateur :", error)
-      }
-    }
-
-    onMounted(async () => {
-      if (serverId && !isNaN(serverId)) {
-        roomStore.setServerId(serverId);
-        await roomStore.fetchRooms(serverId);
-        console.log('Rooms after fetch:', roomStore.rooms); // Debug log
-        await serverStore.fetchServerUsers(serverId);
-      } else {
-        console.error('Invalid serverId on mount:', serverId);
-      }
-    })
-
-    // Sélection d'une room
-    function selectRoom(room) {
-      selectedRoom.value = room
-    }
-
-    // Ajout d'une room
-    async function addRoom() {
-      if (!newRoomName.value.trim()) return;
-      if (!serverId || isNaN(serverId)) {
-        console.error('Invalid serverId:', serverId);
-        return;
-      }
-      await roomStore.addRoom(serverId, newRoomName.value.trim());
-      console.log('Rooms after adding:', roomStore.rooms); // Debug log
-      newRoomName.value = '';
-    }
-
-    // Ouvrir la modale pour éditer la room
-    function openRoomModal(room) {
-      roomToEdit.value = room
-      editRoomName.value = room.name
-      showRoomModal.value = true
-    }
-
-    function closeRoomModal() {
-      showRoomModal.value = false
-      editRoomName.value = ''
-      roomToEdit.value = null
-    }
-
-    async function updateSelectedRoom() {
-      if (!selectedRoom.value) return
-      await roomStore.updateRoom({
-        serverId: selectedRoom.value.id_server, // ou autre ID
-        roomId: selectedRoom.value.id,
-        newName: editRoomName.value.trim()
-      })
-      // Mettre à jour localement
-      selectedRoom.value.name = editRoomName.value.trim()
-      closeRoomModal()
-    }
-
-    async function deleteSelectedRoom() {
-      if (!selectedRoom.value) return;
-      try {
-        const serverId = selectedRoom.value.id_server ?? roomStore.serverId;
-        if (!serverId) {
-          console.error('serverId is missing');
-          alert('Impossible de supprimer la room : ID du serveur manquant.');
-          return;
-        }
-        await roomStore.deleteRoom(selectedRoom.value.id, serverId);
-        console.log('Rooms after deletion:', roomStore.rooms);
-        selectedRoom.value = null;
-      } catch (error) {
-        console.error('Erreur lors de la suppression de la room', error);
-        alert('Une erreur est survenue lors de la suppression de la room.');
-      }
-    }
-
-    // Quitter le serveur
-    async function leaveCurrentServer() {
-      await serverStore.leaveServer(authStore.user.id, Number(serverId))
-      router.push('/home')
-    }
-
-    // Supprimer complètement le serveur
-    async function deleteServer() {
-      await serverStore.deleteServer(Number(serverId))
-      router.push('/home')
-    }
-
-    return {
-      serverId,
-      selectedRoom,
-      newRoomName,
-      editRoomName,
-      updatedServerName,
-      updatedServerImage,
-
-      // Modale modifier serveur
-      showEditServerModal,
-      openEditServerModal,
-      closeEditServerModal,
-
-      // Modale d'invitation
-      showInviteModal,
-      inviteInput,
-      selectedUser,
-      filteredUsers,
-
-      // Modale de gestion
-      showGererModal,
-      openGererModal,
-      closeGererModal,
-
-
-      openInviteModal,
-      closeInviteModal,
-      selectUser,
-      addUserOnServer,
-
-      // Méthodes rooms
-      selectRoom,
-      addRoom,
-      updateSelectedRoom,
-      deleteSelectedRoom,
-
-      // Méthodes serveur
-      leaveCurrentServer,
-      deleteServer,
-      updateServerInfo,
-
-      // Stores
-      authStore,
-      serverStore,
-      roomStore,
-      userStore
-    }
-  }
+function selectRoom(room) {
+  selectedRoom.value = room
 }
+
+async function addRoom() {
+  if (!newRoomName.value) return
+  await roomStore.addRoom(serverId, newRoomName.value)
+  newRoomName.value = ''
+}
+
+async function leaveCurrentServer() {
+  await serverStore.leaveServer(authStore.user.id, serverId)
+  router.push('/home')
+}
+
+async function deleteServer() {
+  if (!isAdmin.value) return
+  await serverStore.deleteServer(serverId)
+  router.push('/home')
+}
+
+async function addUserOnServer() {
+  if (!inviteUsername.value) return
+  await serverStore.addUserOnServer(inviteUsername.value, serverId)
+  inviteUsername.value = ''
+  showInviteModal.value = false
+  await serverStore.fetchServerUsers(serverId)
+}
+
+async function toggleAdmin(userId, makeAdmin) {
+  await serverStore.toggleAdmin(serverId, userId, makeAdmin)
+}
+
+async function kickUser(userId) {
+  await serverStore.kickUser(serverId, userId)
+  await serverStore.fetchServerUsers(serverId)
+}
+
+async function sendMessage() {
+  // Stub: implement message send
+}
+
+async function updateSelectedRoom() {
+  if (!editRoomName.value.trim()) return
+  await roomStore.updateRoom(selectedRoom.value.id, { name: editRoomName.value })
+  selectedRoom.value.name = editRoomName.value
+  showEditRoomModal.value = false
+}
+
+async function deleteSelectedRoom() {
+  await roomStore.deleteRoom(selectedRoom.value.id, serverId)
+  selectedRoom.value = null
+}
+
+const userMap = computed(() => serverStore.userMap)
 </script>
 
 <style scoped>
-
-/* Conteneur principal (3 colonnes) */
 .server-layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: 250px 1fr 200px;
   height: 100vh;
-  font-family: Arial, sans-serif;
-  background-color: #36393f; /* fond général “Discord” */
-  color: #dcddde;           /* texte clair */
+  background: #36393f;
+  color: #dcddde;
 }
-
-/* Colonne de gauche */
-.left-panel {
-  width: 250px;
-  background-color: #2f3136;
-  padding: 15px;
+.left-panel,
+.right-panel {
+  background: #2f3136;
+  padding: 16px;
   overflow-y: auto;
 }
-
-.left-panel h1,
-.left-panel h2,
-.left-panel h3 {
-  color: #fff;
-  margin-bottom: 15px;
-}
-
-.left-panel ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.left-panel li {
-  padding: 6px 10px;
-  margin-bottom: 5px;
-  cursor: pointer;
-  border-radius: 4px;
-  color: #dcddde;
-  transition: background-color 0.2s;
-}
-.left-panel li:hover {
-  background-color: #393c43; /* un peu plus clair au survol */
-}
-.left-panel li.selected {
-  background-color: #5865F2; /* sur la room sélectionnée */
-}
-
-/* Pour un petit bloc d’ajout de room */
-.add-room {
-  margin-top: 10px;
-  display: flex;
-  gap: 5px;
-}
-
-/* Section de mise à jour du serveur */
-.update-server-section {
-  margin-top: 20px;
+.main-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  background: #36393f;
+  padding: 16px;
 }
-
-/* Colonne du milieu */
-.middle-panel {
-  flex: 1; /* occupe l'espace central */
-  background-color: #36393f;
-  padding: 20px;
-  color: #dcddde;
-}
-
-.no-room-selected {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  color: #aaa;
-}
-
-.room-edit-content {
+/* Header */
+.server-header {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  margin-bottom: 16px;
 }
-.room-edit-content .buttons {
+.server-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+}
+.server-actions {
   display: flex;
   gap: 8px;
 }
-
-/* Colonne de droite */
-.right-panel {
-  width: 200px;
-  background-color: #2f3136;
+/* Rooms navigation */
+.rooms-nav h2 {
+  margin-bottom: 8px;
+  font-size: 1.25rem;
+}
+.rooms-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.rooms-nav li {
   padding: 10px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.rooms-nav li:hover {
+  background: #42454a;
+}
+.rooms-nav li.selected {
+  background: #5865f2;
+}
+.add-room {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.add-room input {
+  flex: 1;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background: #2f3136;
+  color: #dcddde;
+}
+.add-room button {
+  width: 40px;
+}
+/* Footer */
+.server-footer {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+}
+/* Main panel: no selection */
+.no-selection {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #72767d;
+  font-size: 1.2rem;
+}
+/* Room content */
+.room-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.room-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+.messages-area {
+  flex: 1;
+  background: #2f3136;
+  border-radius: 4px;
+  padding: 16px;
   overflow-y: auto;
+  margin-bottom: 12px;
 }
-
+.message-input {
+  display: flex;
+  gap: 8px;
+}
+.message-input input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background: #2f3136;
+  color: #dcddde;
+}
+.message-input button {
+  padding: 10px 16px;
+}
+/* Right panel: users */
 .right-panel h3 {
-  color: #fff;
-  margin-bottom: 10px;
+  margin: 0 0 12px 0;
+  font-size: 1.25rem;
 }
-
 .right-panel ul {
   list-style: none;
-  margin: 0;
   padding: 0;
+  margin: 0;
 }
-
 .right-panel li {
+  padding: 8px;
+  border-radius: 4px;
   margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+}
+.right-panel li:hover {
+  background: #42454a;
+}
+.badge {
+  background: #43b581;
   color: #fff;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 12px;
 }
-.right-panel li.admin {
-  color: yellow; /* si l’utilisateur est admin */
-  font-weight: bold;
-}
-
-/* Boutons */
+/* Buttons */
+.btn,
 .btn-primary,
 .btn-danger {
   border: none;
   border-radius: 4px;
-  padding: 8px 16px;
   cursor: pointer;
-  transition: background-color 0.2s;
   font-size: 14px;
+  padding: 8px 16px;
+  transition: background 0.2s;
 }
-
-/* Bouton principal (bleu Discord) */
 .btn-primary {
-  background-color: #5865F2;
+  background: #5865F2;
   color: #fff;
 }
 .btn-primary:hover {
-  background-color: #4752c4;
+  background: #4752c4;
 }
-
-/* Bouton danger (rouge) */
 .btn-danger {
-  background-color: #f04747;
+  background: #f04747;
   color: #fff;
 }
 .btn-danger:hover {
-  background-color: #ce3c3c;
+  background: #ce3c3c;
 }
-
-/* Overlay de modale (fond gris transparent) */
+/* Modals inline */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 900;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
 }
-
-/* Modale d’invitation (ou autres modales) */
-.invite-modal,
-.editserv-modal {
+.modal-box {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: #36393f;
-  padding: 25px;
+  background: #36393f;
+  padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 1001;
   width: 320px;
 }
-
-.invite-modal h3,
-.editserv-modal h3 {
-  color: #fff;
-  margin-bottom: 15px;
-  text-align: center;
+.modal-box h3 {
+  margin-bottom: 16px;
+  font-size: 1.25rem;
 }
-
-.invite-modal input,
-.editserv-modal input {
+.modal-box input {
   width: 100%;
   padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #555;
+  margin-bottom: 16px;
   border-radius: 4px;
-  background-color: #2f3136;
+  border: 1px solid #555;
+  background: #2f3136;
   color: #dcddde;
-  font-size: 14px;
 }
-
-.invite-modal ul {
-  list-style: none;
-  padding: 0;
-  margin-bottom: 15px;
-  max-height: 150px;
-  overflow-y: auto;
-  border: 1px solid #555;
-  border-radius: 4px;
+.edit-room-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 16px;
 }
-
-.invite-modal li {
-  padding: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  border-bottom: 1px solid #555;
-}
-.invite-modal li:last-child {
-  border-bottom: none;
-}
-.invite-modal li:hover {
-  background-color: #4752c4;
-}
-
-.modal-btn {
-  width: 100%;
-  margin-top: 5px;
-}
-
-/* Édition de la room dans une modale */
-.room-edit-panel {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: #36393f;
-  padding: 25px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-  width: 320px;
-}
-
-.room-edit-panel h3 {
-  color: #fff;
-  margin-bottom: 15px;
-  text-align: center;
-}
-
-.room-edit-panel input {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #555;
-  border-radius: 4px;
-  background-color: #2f3136;
-  color: #dcddde;
-  font-size: 14px;
-}
-
-.room-edit-panel .buttons {
+.manage-user {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #555;
 }
-
-/* Optionnel : un petit bouton “edit” discret */
-.edit-btn {
-  margin-left: 10px;
-  background-color: transparent;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  font-size: 16px;
+.manage-actions button {
+  margin-left: 8px;
 }
-.edit-btn:hover {
-  color: #aaa;
-}
-
 </style>

@@ -1,6 +1,6 @@
   // store/servers.js
   import { defineStore } from 'pinia';
-  import axios from 'axios';
+  import api from '../plugins/axios';
 
   export const useServerStore = defineStore('servers', {
     state: () => ({
@@ -14,7 +14,7 @@
     actions: {
       async fetchAllServers() {
         try {
-          const response = await axios.get('http://localhost:8080/servers');
+          const response = await api.get('http://localhost:8080/servers');
           this.allServers = response.data.servers;
                 } catch (error) {
           console.error('Erreur fetchAllServers', error);
@@ -23,7 +23,7 @@
 
       async fetchUserServers(userId) {
         try {
-          const response = await axios.get(`http://localhost:8080/users/${userId}/servers`);
+          const response = await api.get(`http://localhost:8080/users/${userId}/servers`);
           this.userServers = response.data.servers;
           } catch (error) {
           console.error('Erreur fetchUserServers', error);
@@ -43,13 +43,13 @@
 
       async createServer(serverName, serverImage, userId) {
         try {
-          const response = await axios.post('http://localhost:8080/servers', {
+          const response = await api.post('http://localhost:8080/servers', {
             name: serverName,
             img: serverImage
           })
 
           if (response.status === 201) {
-            const serverListResponse = await axios.get("http://localhost:8080/servers");
+            const serverListResponse = await api.get("http://localhost:8080/servers");
             const latestServer = serverListResponse.data.servers.slice(-1)[0];
             const newServerId = latestServer?.id;
 
@@ -59,7 +59,7 @@
             }
             
                         
-            const addResp = await axios.post(`http://localhost:8080/servers/${newServerId}/users`, {
+            const addResp = await api.post(`http://localhost:8080/servers/${newServerId}/users`, {
               user_id: userId,
               server_id: newServerId,
               admin: true
@@ -81,7 +81,7 @@
 
       async addUserOnServer(userId, serverId) {
         try {
-          const response = await axios.post(
+          const response = await api.post(
             `http://localhost:8080/servers/${serverId}/users`,
             {
               user_id: userId,
@@ -107,7 +107,7 @@
 
       async leaveServer(userId, serverId) {
         try {
-          const response = await axios.delete(`http://localhost:8080/servers/${serverId}/users`, {
+          const response = await api.delete(`http://localhost:8080/servers/${serverId}/users`, {
             data: { user_id: userId, server_id: serverId }
           });
           if (response.status === 200) {
@@ -120,7 +120,7 @@
 
       async updateServer(serverData) {
         try {
-          const response = await axios.put(`http://localhost:8080/servers/${serverData.id}`, {
+          const response = await api.put(`http://localhost:8080/servers/${serverData.id}`, {
             name: serverData.name,
             img: serverData.image
           });
@@ -134,7 +134,7 @@
 
       async fetchServerUsers(serverId) {
         try {
-          const response = await axios.get(`http://localhost:8080/servers/${serverId}/users`);
+          const response = await api.get(`http://localhost:8080/servers/${serverId}/users`);
           this.serverUsers = response.data;
           console.log(this.serverUsers)
         } catch (error) {
@@ -144,7 +144,7 @@
 
       async deleteServer(serverId) {
         try {
-          const response = await axios.delete(`http://localhost:8080/servers/${serverId}`);
+          const response = await api.delete(`http://localhost:8080/servers/${serverId}`);
           if (response.status === 200) {
             console.log(`Serveur ${serverId} supprimé avec succès`);
             await this.fetchAllServers();
@@ -158,7 +158,7 @@
         try {
           const entries = await Promise.all(
             userIds.map(async id => {
-              const response = await axios.get(`http://localhost:8080/users/id/${id}`);
+              const response = await api.get(`http://localhost:8080/users/id/${id}`);
               return [id, response.data.username];
             })
           );
@@ -172,7 +172,7 @@
         try {
           const entries = await Promise.all(
             userIds.map(async id => {
-              const response = await axios.get(`http://localhost:8080/users/id/${id}`);
+              const response = await api.get(`http://localhost:8080/users/id/${id}`);
               return [id, response.data.username];
             })
           );
@@ -185,7 +185,7 @@
 
       async kickUser(serverId, userId) {
         try {
-          const response = await axios.delete(`http://localhost:8080/servers/${serverId}/users/${userId}`);
+          const response = await api.delete(`http://localhost:8080/servers/${serverId}/users/${userId}`);
           if (response.status === 200) {
             console.log(`Utilisateur ${userId} retiré du serveur ${serverId}`);
             await this.fetchServerUsers(serverId);
@@ -197,7 +197,7 @@
   
       async toggleAdmin(serverId, userId, isAdmin) {
         try {
-          const response = await axios.put(`http://localhost:8080/servers/${serverId}/users/${userId}`, {
+          const response = await api.put(`http://localhost:8080/servers/${serverId}/users/${userId}`, {
             admin: isAdmin
           });
           if (response.status === 200) {

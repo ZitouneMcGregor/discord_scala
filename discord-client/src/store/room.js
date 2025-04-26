@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import axios from 'axios';
+import api from '../plugins/axios';
 
 export const useRoomStore = defineStore('rooms', {
   state: () => ({
@@ -16,7 +16,7 @@ export const useRoomStore = defineStore('rooms', {
     async fetchRooms(serverId) {
       try {
         if (!serverId) throw new Error('serverId is required');
-        const response = await axios.get(`http://localhost:8080/servers/${serverId}/rooms`);
+        const response = await api.get(`http://localhost:8080/servers/${serverId}/rooms`);
         this.rooms = Array.isArray(response.data.rooms) ? response.data.rooms : [];
       } catch (error) {
         console.error('Erreur lors de la récupération des rooms', error);
@@ -30,7 +30,7 @@ export const useRoomStore = defineStore('rooms', {
           name: roomName,
           serverId: parseInt(serverId),
         };
-        const response = await axios.post('http://localhost:8080/rooms', roomPayload);
+        const response = await api.post('http://localhost:8080/rooms', roomPayload);
         if (response.status === 201) {
           await this.fetchRooms(serverId);
         }
@@ -46,7 +46,7 @@ export const useRoomStore = defineStore('rooms', {
           name: newName,
           serverId: serverId,
         };
-        const response = await axios.put(`http://localhost:8080/rooms/${roomId}`, roomPayload);
+        const response = await api.put(`http://localhost:8080/rooms/${roomId}`, roomPayload);
         if (response.status === 200) {
           console.log('Room mise à jour avec succès');
           await this.fetchRooms(serverId);
@@ -58,7 +58,7 @@ export const useRoomStore = defineStore('rooms', {
 
     async deleteRoom(roomId, serverId) {
       try {
-        const response = await axios.delete(`http://localhost:8080/rooms/${roomId}`);
+        const response = await api.delete(`http://localhost:8080/rooms/${roomId}`);
         if (response.status === 200) {
           console.log('Room supprimée avec succès');
           await this.fetchRooms(serverId);

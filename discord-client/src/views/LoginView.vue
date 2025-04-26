@@ -15,42 +15,41 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useAuthStore } from '../store/auth';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '../store/auth';
 
-const authStore = useAuthStore();
+const auth = useAuthStore();
 const router = useRouter();
+
 const username = ref('');
 const password = ref('');
 const isRegistering = ref(false);
 
 const toggleMode = () => {
   isRegistering.value = !isRegistering.value;
+  username.value = '';
+  password.value = '';
 };
 
 const handleSubmit = async () => {
-  if (isRegistering.value) {
-        const result = await authStore.register(username.value, password.value);
+  if (!username.value || !password.value) return;
 
-        if (result.success) {
-            alert(result.message);
-            isRegistering.value = false;
-        } else {
-            alert(`Erreur : ${result.message}`);
-        }
-  } else {
-    const success = await authStore.login(username.value, password.value);
-    if (success) {
-      const user = await authStore.getUser(username.value); 
-      console.log(user);
-      if (user && !user.deleted) {
-        router.push('/home');
-      } else {
-        alert('Votre compte a été supprimé.');
-      }
+  if (isRegistering.value) {
+    const res = await auth.register(username.value, password.value);
+    if (res.success) {
+      alert(res.message);
+      toggleMode();
     } else {
-      alert('Identifiants incorrects.');
+      alert(`Erreur : ${res.message}`);
+    }
+  } else {
+    const res = await auth.login(username.value, password.value);
+    if (res.success) {
+      // redirige vers /home si OK
+      router.push('/home');
+    } else {
+      alert(res.message);
     }
   }
 };

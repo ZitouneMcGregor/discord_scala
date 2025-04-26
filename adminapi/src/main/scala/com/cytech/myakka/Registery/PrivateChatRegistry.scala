@@ -85,29 +85,72 @@ object PrivateChatRegistry {
       .transact(xa)
       .unsafeRunSync()
 
-  private def dbCreatePrivateChat(xa: Transactor, chat: PrivateChat): Boolean =
+  private def dbFindPrivateChat(xa: Transactor, u1: Int, u2: Int): Option[PrivateChat] =
     sql"""
-         INSERT INTO PRIVATE_CHAT (user_id_1, user_id_2, delete_user_1, delete_user_2)
-         VALUES (${chat.user_id_1}, ${chat.user_id_2}, ${chat.delete_user_1.getOrElse(false)}, ${chat.delete_user_2.getOrElse(false)})
-       """
+      SELECT id, user_id_1, user_id_2, delete_user_1, delete_user_2
+      FROM private_chat
+      WHERE (user_id_1 = $u1 AND user_id_2 = $u2)
+         OR (user_id_1 = $u2 AND user_id_2 = $u1)
+    """
+      .query[PrivateChat]
+      .option
+      .transact(xa)
+      .attempt
+      .map {
+        case Right(opt) => opt
+        case Left(e) =>
+          println(s"[DB ERROR] findPrivateChat($u1,$u2): ${e.getMessage}")
+          None
+      }
+      .unsafeRunSync()
+
+  private def dbResetPrivateChat(xa: Transactor, chatId: Int): Boolean =
+    sql"""
+      UPDATE private_chat
+      SET delete_user_1 = false,
+          delete_user_2 = false
+      WHERE id = $chatId
+    """
       .update
       .run
       .attempt
       .map {
-        case Right(_) => true
+        case Right(rows) => rows > 0
         case Left(e) =>
-          println(s"[DB ERROR] Failed to create private chat: ${e.getMessage}")
+          println(s"[DB ERROR] resetPrivateChat($chatId): ${e.getMessage}")
           false
       }
       .transact(xa)
       .unsafeRunSync()
 
+  private def dbCreatePrivateChat(xa: Transactor, chat: PrivateChat): Boolean = {
+    dbFindPrivateChat(xa, chat.user_id_1, chat.user_id_2) match {
+      case Some(existing) =>
+        dbResetPrivateChat(xa, existing.id.getOrElse(-1))
+      case None =>
+        sql"""
+          INSERT INTO private_chat (user_id_1, user_id_2, delete_user_1, delete_user_2)
+          VALUES (${chat.user_id_1}, ${chat.user_id_2}, ${chat.delete_user_1.getOrElse(false)}, ${chat.delete_user_2.getOrElse(false)})
+        """
+          .update
+          .run
+          .attempt
+          .map {
+            case Right(_) => true
+            case Left(e) =>
+              println(s"[DB ERROR] createPrivateChat: ${e.getMessage}")
+              false
+          }
+          .transact(xa)
+          .unsafeRunSync()
+    }
+  }
+
   private def dbDeletePrivateChat(xa: Transactor, chatId: Int, userId: Int): Boolean =
     sql"""
          UPDATE PRIVATE_CHAT
          SET delete_user_1 = CASE WHEN user_id_1 = $userId THEN true ELSE delete_user_1 END,
-             delete_user_2 = CASE WHEN user_id_2 = $userId THEN true ELSE delete_user_2 END,
-             updated_at     = NOW()
+             delete_user_2 = CASE WHEN user_id_2 = $userId THEN true ELSE delete_user_2 END
          WHERE id = $chatId
        """
       .update

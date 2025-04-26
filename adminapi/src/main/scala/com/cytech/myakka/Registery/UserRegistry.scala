@@ -20,8 +20,7 @@ object UserRegistry {
   //#user-case-classes
   final case class User(id: Option[Int], username: String, password: String, deleted: Option[Boolean])
   final case class Users(users: immutable.Seq[User])
-
-
+  
   // actor protocol
   sealed trait Command
   final case class GetUsers(replyTo: ActorRef[Users]) extends Command
@@ -30,6 +29,7 @@ object UserRegistry {
   final case class GetUserById(id: Int, replyTo: ActorRef[GetUserResponse]) extends Command
   final case class DeleteUser(username: String, replyTo: ActorRef[ActionPerformed]) extends Command
   final case class UpdateUser(username: String, newUsername: String, newPassword: String, replyTo: ActorRef[ActionPerformed]) extends Command
+  final case class SearchUsers(prefix: String, replyTo: ActorRef[Users]) extends Command
 
   final case class GetUserResponse(maybeUser: Option[User])
   final case class ActionPerformed(success : Boolean,description: String)
@@ -156,6 +156,32 @@ object UserRegistry {
       }
       .transact(xa)
   }
+
+  private def dbSearchUsers(xa: Transactor, prefix: String): Users = {
+    val pattern = s"${prefix.toLowerCase}%"
+    val list: List[User] =
+      sql"""
+        SELECT id, username, '' AS password, deleted
+        FROM users
+        WHERE LOWER(username) LIKE $pattern
+          AND COALESCE(deleted, false) = false
+        ORDER BY username
+        LIMIT 10
+      """
+        .query[User]
+        .to[List]
+        .transact(xa)
+        .attempt
+        .map {
+          case Right(us) => us.map(u => u.copy(password = ""))
+          case Left(e) =>
+            println(s"[DB ERROR] searchUsers($prefix): ${e.getMessage}")
+            Nil
+        }
+        .unsafeRunSync()
+
+    Users(list)
+  }
   
 
   private def registry(xa: Transactor): Behavior[Command] =
@@ -190,6 +216,9 @@ object UserRegistry {
           case Left(errorMessage) =>
             replyTo ! ActionPerformed(false,errorMessage)
         }
+        Behaviors.same
+      case SearchUsers(prefix, replyTo) =>
+        replyTo ! dbSearchUsers(xa, prefix)
         Behaviors.same
     }
 }
