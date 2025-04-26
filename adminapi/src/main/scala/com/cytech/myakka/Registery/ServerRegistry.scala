@@ -11,11 +11,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.cytech.myakka.configuration.PostgresConfig
 import doobie.postgres.sqlstate
-
-
-
-
-
+import cats.syntax.all._
 
 object ServerRegistry {
 
@@ -53,23 +49,37 @@ object ServerRegistry {
   }
 
   def dbGetServers(xa: Transactor): Servers = {
-    Servers(
+    val list: List[Server] =
       sql"SELECT * FROM servers".
       query[Server].
       to[List].
-      transact(xa).
-      unsafeRunSync()
-    )
+      transact(xa)
+      .attempt
+      .map {
+        case Right(rows) => rows
+        case Left(e) =>
+          println(s"[DB ERROR] getServers: ${e.getMessage}")
+          Nil
+      }
+      .unsafeRunSync()
+    Servers(list)
   }
 
   def dbGetRoomsByServer(serverId: Int, xa: Transactor): Rooms = {
-    Rooms(
+    val list: List[Room] =
       sql"SELECT id, name, id_server FROM room WHERE id_server = $serverId"
         .query[Room]
         .to[List]
         .transact(xa)
+        .attempt
+        .map {
+          case Right(rows) => rows
+          case Left(e) =>
+            println(s"[DB ERROR] getRoomsByServer($serverId): ${e.getMessage}")
+            Nil
+        }
         .unsafeRunSync()
-    )
+    Rooms(list)
   }
 
   def dbGetServer(xa: Transactor, id: Int): Option[Server] = {
@@ -77,6 +87,13 @@ object ServerRegistry {
       query[Server].
       option.
       transact(xa).
+      attempt
+      .map {
+        case Right(opt) => opt
+        case Left(e) =>
+          println(s"[DB ERROR] getServer($id): ${e.getMessage}")
+          None
+      }.
       unsafeRunSync()
   }
 
@@ -87,6 +104,13 @@ object ServerRegistry {
       .attemptSomeSqlState {
         case sqlstate.class23.UNIQUE_VIOLATION => s"Error: Server name '${server.name}' already exists."
       }
+      .attempt
+      .map {
+        case Right(either) => either
+        case Left(e) =>
+          println(s"[DB ERROR] createServer(${server.name}): ${e.getMessage}")
+          Left(s"Error: Could not create server '${server.name}'.")
+      }
       .transact(xa)
   }
 
@@ -95,7 +119,14 @@ object ServerRegistry {
       update.
       run.
       transact(xa).
-      unsafeRunSync()
+      attempt
+      .map {
+        case Right(count) => count > 0
+        case Left(e) =>
+          println(s"[DB ERROR] deleteServer($id): ${e.getMessage}")
+          false
+      }
+      .unsafeRunSync()
   }
 
   def dbUpdateServer(xa: Transactor, id: Int, newName: String, newImg: String): IO[Either[String, Int]] = {
@@ -106,8 +137,15 @@ object ServerRegistry {
       """.update.run
       .attemptSomeSqlState {
         case sqlstate.class23.UNIQUE_VIOLATION => s" Error: Username '$newName' is already taken"
-
-      }.transact(xa)
+      }
+      .attempt
+      .map {
+        case Right(either) => either
+        case Left(e)       =>
+          println(s"[DB ERROR] updateServer($id): ${e.getMessage}")
+          Left(s"Error: Could not update server $id.")
+      }
+      .transact(xa)
   }
 
   private def registry(xa: Transactor): Behavior[Command] =
