@@ -1,30 +1,34 @@
-# Sample Pekko HTTP server
+# Consumer
 
-This is a sample Pekko HTTP endpoint keeping an in-memory database of users that can be created and listed.
+Le consumer consomme des messages d'un topic Pulsar (discord-messages), les insère dans MongoDB, et les distribue aux clients WebSocket abonnés.
 
-Sources in the sample:
+## Lancer application
 
-* `QuickstartApp.scala` -- contains the main method which bootstraps the application
-* `UserRoutes.scala` -- Pekko HTTP `routes` defining exposed endpoints
-* `UserRegistry.scala` -- the actor which handles the registration requests
-* `JsonFormats.scala` -- converts the JSON data from requests into Scala types and from Scala types into JSON responses
+3. Lancez l'application avec SBT :
+   ```bash
+   sbt run
+   ```
 
-## Interacting with the sample
+## Fonctionnalités
 
-After starting the sample with `sbt run` the following requests can be made:
+**Connexion à Pulsar** : Consommation des messages du topic persistent://public/default/discord-messages.
+**Décodage JSON** : Les messages sont décodés en objets Scala (Message) via Circe.
+**Stockage MongoDB** : Insertion automatique de chaque message dans la base de données MongoDB discordMongo, collection messages.
 
-List all users:
+## Structure des Messages reçus
 
-    curl http://localhost:8080/users
+```json
+{
+  "id": "serverId",
+  "timestamp": "2025-04-27T14:30:00Z",
+  "content": "Hello World!",
+  "metadata": {
+    "author": "user123",
+    "channel": "general"
+  }
+}
+```
 
-Create a user:
+## Configuration
 
-    curl -XPOST http://localhost:8080/users -d '{"name": "Liselott", "age": 32, "countryOfResidence": "Norway"}' -H "Content-Type:application/json"
-
-Get the details of one user:
-
-    curl http://localhost:8080/users/Liselott
-
-Delete a user:
-
-    curl -XDELETE http://localhost:8080/users/Liselott
+Le consommateur peut être configuré à l'aide de variables d'environnement ou d'un fichier de configuration. Mettez à jour le fichier `application.conf` dans le répertoire `resources` pour définir vos préférences.

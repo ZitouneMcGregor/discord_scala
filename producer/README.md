@@ -1,32 +1,34 @@
-This is an example Akka HTTP application that works with PostgreSQL on Clever Cloud.
+# Producer
 
-# Features
-Project generated from Akka Github [quick start template](https://github.com/akka/akka-http-quickstart-scala.g8).
+**Producer** est un service backend basé sur Apache Pekko HTTP (anciennement Akka HTTP), conçu pour produire des messages dans une file d'attente Pulsar. Il expose une API REST sécurisée avec une authentification basique et utilise `pulsar4s` pour communiquer avec Pulsar.
 
-This service provides the ability to manage a simple in-memory user registry exposing 4 routes:
-- List all users
-- Get a specific user
-- Create a user
-- Delete a user
+## Lancer application
 
-A thorough  description of the cURL commands may be found [here](https://developer.lightbend.com/guides/akka-http-quickstart-scala/#cURL-commands)
+3. Lancez l'application avec SBT :
+   ```bash
+   sbt run
+   ```
 
-A few functionalities have been added on top of the original example:
-- store the registry into a PostgreSQL database
-- read database parameters from  Clever Cloud standard environment variables
-- add basic authentication (`foo:bar`)
+## Fonctionnalités
 
-# Configuration
-Configuration parameters are located in the [application.conf](src/main/resources/application.conf)
-You can edit parameters for
-- basic-auth
-- PostgreSQL database
+**Envoi de messages à Pulsar** : Chaque message reçu via l'API est transformé et envoyé vers un topic Pulsar spécifique (persistent://public/default/discord-messages).
+**Ajout automatique d'un timestamp**
 
-# Database creation
-The program uses [Flyway sbt plugin](https://github.com/flyway/flyway-sbt) in order to create the database table automatically.
-It requires a hook run before the program starts. Just set in the application environment the variable `CC_PRE_RUN_HOOK` with the value `sbt flywayMigrate`
+## Routes
 
-# Installation
-To install it, simply fork this repository and create an application from your GitHub repo. Then create a PostgreSQL add-on and link it to your application, either via the Clever Tools CLI or via the Clever Cloud console.
+### **POST /message**
 
-That's it, the application will use the environment variables to connect to the PostgreSQL DB.
+Permet d'envoyer un message dans un topic Pulsar.
+
+#### Structure des messages envoyés :
+
+```json
+{
+  "id": "unique-id-123",
+  "content": "Hello World!",
+  "metadata": {
+    "author": "John Doe",
+    "channel": "general"
+  }
+}
+```

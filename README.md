@@ -1,21 +1,42 @@
-Projet Discord Scala
+# Projet Discord Scala
 
-Prérequis:
+## Description de l'application
+
+Cette application est une plateforme de communication semblable à Discord, écrite en Scala. Elle permet aux utilisateurs de communiquer via des messages texte, de créer des salons de discussion, et d'interagir en temps réel.
+
+## Prérequis
+
 Docker installé sur votre machine.
+**Node.js**
+**npm**
+**Scala3**
 
-Pour lancer l'applis :
+## Lancer l'application
 
-docker-compose up --build
+1. Construisez et démarrez les conteneurs Docker :
 
-rendez vous sur localhost : http://localhost:8081/ pouf accéder à l'application
+   ```bash
+   docker-compose up --build
+   ```
 
-Arrêter et Supprimer l'Application :
+2. Accédez à l'application via votre navigateur à l'adresse suivante :  
+   [http://localhost:8081/](http://localhost:8081/)
+
+## Arrêter et supprimer l'application
+
+Pour arrêter et supprimer les conteneurs ainsi que les volumes associés, exécutez la commande suivante :
+
+```bash
 docker-compose down -v
+```
 
-Equipe : 
+## Équipe
+
 - Olivier CARRERE-GEE
 - Mounic CLEMENT
-- Jérémi LIOGER--BUN
-- OMAR BENZEROUAL
+- Jérémi LIOGER-BUN
+- Omar BENZEROUAL
+
+## Diagramme d'architecture
 
 ![Diagramme d'architecture](architecture.png)
