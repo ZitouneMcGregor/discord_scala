@@ -22,12 +22,10 @@ export const useRoomStore = defineStore('rooms', {
 
   actions: {
     async setServer(serverId) {
-      // 1) on passe sur un nouveau serveur, on réinitialise l'affichage
       this.serverId = serverId
-      this.selectedRoom = null           // plus de room affichée
-      this.messages = {}                 // (optionnel) on vide les anciens messages
+      this.selectedRoom = null 
+      this.messages = {}
 
-      // 2) on recharge la liste des salons et on remets à jour le WS
       await this.fetchRooms(serverId)
       this._watchAll()
     },
@@ -53,7 +51,7 @@ export const useRoomStore = defineStore('rooms', {
     async addRoom(serverId, name) {
       if (!name.trim()) return
       try {
-        await api.post('/rooms', { name, serverId: Number(serverId) })
+        const { data } = await api.post('/rooms', { name, serverId: Number(serverId) })
         await this.fetchRooms(serverId)
         this._watchAll()
       } catch (err) {
@@ -114,10 +112,12 @@ export const useRoomStore = defineStore('rooms', {
 
     _watchAll() {
       const authStore = useAuthStore()
-      const userId = authStore?.user?.id
-      this.watched = new Set(this.rooms.map(r => `r${r.id}`))
-      if (userId) this.watched.add(`dm${userId}`)
-      wsService.connect(this.watched)
+      const userId = authStore?.user?.id?.toString()
+      const ids = this.rooms.map(r => `r${r.id}`)
+      if (userId) ids.push(`dm${userId}`)
+      this.watched = new Set(ids)
+      wsService.connect()
+      wsService.addWatchIds(ids)
     },
   },
 })
