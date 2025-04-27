@@ -1,32 +1,49 @@
-This is an example Akka HTTP application that works with PostgreSQL on Clever Cloud.
+# ChatApi
 
-# Features
-Project generated from Akka Github [quick start template](https://github.com/akka/akka-http-quickstart-scala.g8).
+ChatApi est une application développée en Scala qui fournit une API pour gérer des fonctionnalités de chat en temps réel. Elle est conçue pour être performante, extensible et facile à intégrer dans des systèmes existants.
 
-This service provides the ability to manage a simple in-memory user registry exposing 4 routes:
-- List all users
-- Get a specific user
-- Create a user
-- Delete a user
+## Fonctionnalités
 
-A thorough  description of the cURL commands may be found [here](https://developer.lightbend.com/guides/akka-http-quickstart-scala/#cURL-commands)
+- **Gestion des utilisateurs** : Création, mise à jour et suppression des utilisateurs.
+- **Salles de chat** : Création et gestion de salles de discussion.
+- **Messagerie en temps réel** : Envoi et réception de messages instantanés.
+- **Authentification** : Support de l'authentification sécurisée pour les utilisateurs.
+- **WebSocket** : Communication en temps réel via WebSocket.
+- **Historique des messages** : Stockage et récupération des messages envoyés.
 
-A few functionalities have been added on top of the original example:
-- store the registry into a PostgreSQL database
-- read database parameters from  Clever Cloud standard environment variables
-- add basic authentication (`foo:bar`)
+## Prérequis
 
-# Configuration
-Configuration parameters are located in the [application.conf](src/main/resources/application.conf)
-You can edit parameters for
-- basic-auth
-- PostgreSQL database
+- **Scala** : Version 3.
+- **SBT** : Version 1.5 ou supérieure.
+- **Base de données** : PostgreSQL (gestion des utilisateurs, salles, etc.) et MongoDB (stockage des messages)
+- **Java** : JDK 11 ou supérieur.
 
-# Database creation
-The program uses [Flyway sbt plugin](https://github.com/flyway/flyway-sbt) in order to create the database table automatically.
-It requires a hook run before the program starts. Just set in the application environment the variable `CC_PRE_RUN_HOOK` with the value `sbt flywayMigrate`
+3. Lancez l'application avec SBT :
+   ```bash
+   sbt run
+   ```
 
-# Installation
-To install it, simply fork this repository and create an application from your GitHub repo. Then create a PostgreSQL add-on and link it to your application, either via the Clever Tools CLI or via the Clever Cloud console.
+## Architecture
 
-That's it, the application will use the environment variables to connect to the PostgreSQL DB.
+Le ChatApi lit les messages depuis MongoDB pour fournir l'historique des messages d'une salle et récupérer les messages privés entre utilisateurs.
+
+## Endpoints
+
+### Utilisateurs
+
+- **POST /users** : Créer un utilisateur.
+- **GET /users/{id}** : Récupérer les informations d'un utilisateur.
+- **PUT /users/{id}** : Mettre à jour un utilisateur.
+- **DELETE /users/{id}** : Supprimer un utilisateur.
+
+### Salles de chat
+
+- **POST /rooms** : Créer une salle de chat.
+- **GET /rooms** : Lister toutes les salles de chat.
+- **GET /rooms/{id}** : Récupérer les détails d'une salle de chat.
+- **DELETE /rooms/{id}** : Supprimer une salle de chat.
+
+### Messages
+
+- **POST /rooms/{id}/messages** : Envoyer un message dans une salle.
+- **GET /rooms/{id}/messages** : Récupérer l'historique des messages d'une salle.
