@@ -3,6 +3,7 @@ package fond2laclasse
 import java.util.concurrent.CopyOnWriteArrayList
 import scala.jdk.CollectionConverters._
 import zio.http.WebSocketChannel
+import scala.collection.immutable.Set
 
 case class Subscription(channel: WebSocketChannel, servers: Set[String])
 
@@ -15,11 +16,10 @@ object SubscriptionRegistry {
   def remove(channel: WebSocketChannel): Unit =
     subscriptions.removeIf(_.channel == channel)
 
-  def getChannels(id: String): List[WebSocketChannel] = {
-    subscriptions.asScala.toList
+  def getChannels(id: String): Set[WebSocketChannel] = {
+    subscriptions.asScala 
       .filter(_.servers.contains(id))
       .map(_.channel)
+      .toSet
   }
 }
-
-

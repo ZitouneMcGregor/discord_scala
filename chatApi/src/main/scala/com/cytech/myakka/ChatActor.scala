@@ -36,8 +36,14 @@ object ChatActor {
     }
 
   private def dbGetMessages(id: String, collection: MongoCollection[Document])(implicit ec: ExecutionContextExecutor): Future[Messages] = {
+    val field = id match {
+      case s if s.startsWith("pc") => "metadata.chatId"
+      case s if s.startsWith("r")  => "metadata.roomId"
+      case other                   => "metadata.chatId"
+    }
+    
     collection
-      .find(equal("id", id))
+      .find(equal(field, id))
       .sort(ascending("timestamp"))
       .toFuture()
       .map { docs =>
