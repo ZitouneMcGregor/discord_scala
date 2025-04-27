@@ -33,72 +33,65 @@
 
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '../store/auth'
-import { useServerStore } from '../store/servers'
+import { useRouter }          from 'vue-router'
+import { useAuthStore }       from '../store/auth'
+import { useServerStore }     from '../store/servers'
+import { useRoomStore }       from '../store/room'
+import { usePrivateChatStore } from '../store/privateChats'
 
-/* ---------------------------------------------------------------- WS */
+const router      = useRouter()
+const authStore   = useAuthStore()
+const serverStore = useServerStore()
+const roomStore   = useRoomStore()
+const pcStore     = usePrivateChatStore()
+
+/* ---------------- WebSocket ---------------- */
 const WS_URL = 'ws://localhost:8082/subscriptions'
 let ws: WebSocket | null = null
 
-// Ouvre (ou ré-ouvre) la WebSocket
-function connectWs() {
+function connectWs () {
   if (ws && ws.readyState === WebSocket.OPEN) return
-
   ws = new WebSocket(WS_URL)
 
-  ws.addEventListener('open', async () => {
-    console.log('[Sidebar] WS connected')
-    await sendSubscriptions() // on envoie la liste des salons + DM
-  })
-
-  ws.addEventListener('close', (e) => {
-    console.warn('[Sidebar] WS closed', e.reason)
-    // tentative de reconnexion après 3 s
-    setTimeout(connectWs, 3000)
-  })
-
-  ws.addEventListener('error', (e) => console.error('[Sidebar] WS error', e))
+  ws.addEventListener('open', sendSubscriptions)
+  ws.addEventListener('close', () => setTimeout(connectWs, 3000))
+  ws.addEventListener('error', e => console.error('[WS] error', e))
 }
 
-// Construit puis envoie la "watch-list" au serveur
-async function sendSubscriptions() {
+async function sendSubscriptions () {
   if (!ws || ws.readyState !== WebSocket.OPEN) return
-  if (!authStore.user) return
+  const me = authStore.user
+  if (!me) return
 
-  // ① Servers
-  const serverIds = serverStore.userServers.map((s) => `s${s.id}`) // préfixe facultatif
-  // ② DM perso (ex : dm42)
-  const dmChannel = `dm${authStore.user.id}`
+  const serverIds = serverStore.userServers.map(s => s.id)
 
-  const channels = [...serverIds, dmChannel].join(',')
+  const allRooms = (
+   await Promise.all(serverIds.map(id => roomStore.fetchRooms(id, true)))
+  ).flat()
+  const rIds = allRooms
+    .filter(r => r && r.id != null)
+    .map(r => `r${r.id}`)
+
+  await pcStore.fetchPrivateChats(me.id)
+  const pcIds = pcStore.privateChats.map(c => `pc${c.id}`)
+
+  const channels = [...rIds, ...pcIds].join(',')
   ws.send(channels)
   console.log('[Sidebar] Sent subscriptions →', channels)
 }
 
-/* ---------------------------------------------------------------- Stores & router */
-const router = useRouter()
-const authStore = useAuthStore()
-const serverStore = useServerStore()
-
 onMounted(async () => {
-  if (!authStore.user) {
-    router.push('/login')
-    return
-  }
+  if (!authStore.user) return router.push('/login')
 
-  // 1) charge les serveurs puis 2) ouvre la socket
   await serverStore.fetchUserServers(authStore.user.id)
   connectWs()
 })
 
-// Si la liste des serveurs change (ex : lʼutilisateur rejoint un nouveau serveur)
 watch(
   () => serverStore.userServers.map((s) => s.id),
   () => sendSubscriptions()
 )
 
-/* ---------------------------------------------------------------- Navigation helpers */
 function goHome() {
   router.push('/home')
 }

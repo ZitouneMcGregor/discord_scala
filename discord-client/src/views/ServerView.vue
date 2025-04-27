@@ -184,7 +184,7 @@ function formatTime(ts) {
   flex-direction: column;
   background: #36393f;
   padding: 16px;
-  min-width: 0;                             /* évite débordement */
+  min-width: 0;                  
 }
 
 /* ---------------------------------------------------------------- Header */

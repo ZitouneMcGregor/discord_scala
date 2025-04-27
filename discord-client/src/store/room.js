@@ -1,45 +1,47 @@
 import { defineStore } from 'pinia';
 import api from '../plugins/axios';
 import axios from 'axios';
-import { wsService } from '../store/wsService'   // chemin vers ton wsService.js
-import { useAuthStore } from '../store/auth'        // pour récupérer l’id de l’utilisateur
+import { wsService } from '../store/wsService'
+import { useAuthStore } from '../store/auth' 
 
 
 export const useRoomStore = defineStore('rooms', {
   state: () => ({
-    rooms: [],               // Array<{ id:number, name:string, ... }>
-    serverId: null,          // id du serveur courant
-    selectedRoom: null,      // objet salon courant
-    watched: new Set(),      // Set<string> des ids suivis ("r12", ...)
-    messages: {},            // { [roomId:string]: Array<Msg> }
+    rooms: [],
+    serverId: null,
+    selectedRoom: null,
+    watched: new Set(),
+    messages: {}, 
   }),
 
   getters: {
-    // retourne les messages du salon sélectionné
     currentMessages(state) {
       return state.selectedRoom ? (state.messages[`r${state.selectedRoom.id}`] || []) : []
     },
   },
 
   actions: {
-    /** Change de serveur (appelée depuis la route /server/:id) */
     async setServer(serverId) {
       this.serverId = serverId
       await this.fetchRooms(serverId)
-      this._watchAll()               // maj watch-list → wsService
+      this._watchAll()
     },
 
     /** Récupère les salons d’un serveur */
-    async fetchRooms(serverId) {
+    async fetchRooms (serverId, dryRun = false) {
       try {
         const { data } = await api.get(`/servers/${serverId}/rooms`)
-        this.rooms = Array.isArray(data.rooms) ? data.rooms : []
-        if (!this.selectedRoom && this.rooms.length) {
-          await this.selectRoom(this.rooms[0])
-        }
+        const list = Array.isArray(data.rooms) ? data.rooms : []
+    
+       if (dryRun) return list       
+    
+        this.rooms = list 
+        return list 
       } catch (err) {
         console.error('[rooms] fetchRooms error', err)
+        if (dryRun) return []
         this.rooms = []
+        return []
       }
     },
 
@@ -80,7 +82,7 @@ export const useRoomStore = defineStore('rooms', {
         const idStr = `r${roomId}`
         const url = `http://localhost:8083/server/${this.serverId}/room/${idStr}/messages`
         const { data } = await axios.get(url, {
-          auth: { username: 'foo', password: 'bar' },  // ton BasicAuth
+          auth: { username: 'foo', password: 'bar' },
         })
         
         this.messages[idStr] = Array.isArray(data.messages) ? data.messages.map(m => ({
@@ -93,12 +95,7 @@ export const useRoomStore = defineStore('rooms', {
         this.messages[`r${roomId}`] = []
       }
     },
-
-    /* ------------------------------------------------------------------ */
-    /* private helpers                                                    */
-    /* ------------------------------------------------------------------ */
-
-    /** Met à jour la watch‑list et (re)connecte le WebSocket service */
+    
     _watchAll() {
       const authStore = useAuthStore()
       const userId = authStore?.user?.id
@@ -109,12 +106,8 @@ export const useRoomStore = defineStore('rooms', {
   },
 })
 
-/* -------------------------------------------------------------------- */
-/* WebSocket → on pousse les messages entrants dans le state            */
-/* -------------------------------------------------------------------- */
 wsService.on('message', (msg) => {
   const store = useRoomStore()
-  // on ignore si ce n’est pas un salon qu’on suit
   if (!store.watched.has(msg.metadata.roomId)) return
   if (!store.messages[msg.metadata.roomId]) {
     store.messages[msg.metadata.roomId] = []
