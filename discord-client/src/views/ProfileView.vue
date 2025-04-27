@@ -41,17 +41,20 @@ export default {
     const router = useRouter()
 
     async function updateProfile() {
-      const userName = authStore.user.username
-      const success = await authStore.updateUser(userName, {
-        newUsername: newUsername.value.trim(),
-        newPassword: newPassword.value.trim()
-      });
+      const trimmedUsername = newUsername.value.trim()
+      const trimmedPassword = newPassword.value.trim()
+
+      const success = await authStore.updateUser(
+        trimmedUsername,
+        trimmedPassword
+      )
+
       if (success) {
         alert('Profil mis à jour avec succès !');
         newUsername.value = '';
         newPassword.value = '';
       } else {
-        alert("Erreur nom d'utilisateur déjà pris");
+        alert("Erreur : nom d'utilisateur déjà pris ou problème réseau");
       }
     }
 

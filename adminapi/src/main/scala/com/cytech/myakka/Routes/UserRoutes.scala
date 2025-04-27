@@ -25,6 +25,12 @@ trait UserJsonFormats extends DefaultJsonProtocol {
   given actionPerformedFormat: RootJsonFormat[ActionPerformed] = jsonFormat2(ActionPerformed.apply)
 }
 
+final case class UpdateUserRequest(newUsername: String, newPassword: String)
+object UpdateUserRequest {
+  implicit val format: RootJsonFormat[UpdateUserRequest] =
+    jsonFormat2(UpdateUserRequest.apply)
+}
+
 //#import-json-formats
 //#user-routes-class
 class UserRoutes(userRegistry: ActorRef[Command], auth: BasicAuthConfig)(implicit val system: ActorSystem[_]) extends UserJsonFormats {
@@ -94,14 +100,13 @@ class UserRoutes(userRegistry: ActorRef[Command], auth: BasicAuthConfig)(implici
                 complete(StatusCodes.OK, performed)
               }
             },
-            put{
-              entity(as[User]){ user =>
-                onSuccess(updateUser(username,user.username, user.password)){ performed =>
+            put {
+            entity(as[UpdateUserRequest]) { req =>
+              onSuccess(updateUser(username, req.newUsername, req.newPassword)) { performed =>
                 complete(StatusCodes.OK, performed)
               }
-
-              }
-            })
+            }
+          })
         },
         pathPrefix("id" / IntNumber) { id =>
             get {

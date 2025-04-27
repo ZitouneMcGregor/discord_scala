@@ -9,7 +9,7 @@ export const useUserStore = defineStore('users', {
   actions: {
     async fetchAllUsers() {
       try {
-        const response = await api.get('http://localhost:8080/users'); 
+        const response = await api.get('/users'); 
         this.allUsers = response.data;
       } catch (error) {
         console.error('Erreur fetchAllUsers', error);
@@ -17,7 +17,7 @@ export const useUserStore = defineStore('users', {
     },
     async fetchInviteUsers(serverId) {
       try {
-        const response = await api.get(`http://localhost:8080/servers/${serverId}/invite`);
+        const response = await api.get(`/servers/${serverId}/invite`);
         this.inviteUsers = response.data;
       } catch (error) {
         console.error('Erreur fetchInviteUsers', error);

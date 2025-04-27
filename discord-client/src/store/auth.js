@@ -49,11 +49,13 @@ export const useAuthStore = defineStore('auth', {
 
     async updateUser(newUsername, newPassword) {
       if (!this.user) return { success: false };
+
       try {
-        const res = await api.put(`/users/${this.user.username}`, {
-          username: newUsername,
-          password: newPassword
-        });
+        const res = await api.put(
+          `/users/${this.user.username}`,
+          { newUsername, newPassword }
+        );
+
         if (res.data.success) {
           this.user.username = newUsername;
           localStorage.setItem('user', JSON.stringify(this.user));
