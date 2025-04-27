@@ -33,7 +33,7 @@
   <button onclick="sendMessage()">Send</button>
 
   <script>
-    const socket = new WebSocket("ws://localhost:8080/subscriptions");
+    const socket = new WebSocket("ws://localhost:8082/subscriptions");
     const messagesDiv = document.getElementById("messages");
 
     socket.onopen = () => {
