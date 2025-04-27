@@ -6,7 +6,10 @@ Cette application est une plateforme de communication semblable à Discord, écr
 
 ## Prérequis
 
-- Docker installé sur votre machine.
+Docker installé sur votre machine.
+**Node.js**
+**npm**
+**Scala3**
 
 ## Lancer l'application
 

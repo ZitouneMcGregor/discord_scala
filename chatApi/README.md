@@ -19,13 +19,6 @@ Le ChatApi lit les messages depuis MongoDB pour fournir l'historique des message
 - **WebSocket** : Communication en temps réel via WebSocket.
 - **Historique des messages** : Stockage et récupération des messages envoyés.
 
-## Prérequis
-
-- **Scala** : Version 3.
-- **SBT**
-- **Base de données** : PostgreSQL (gestion des utilisateurs, salles, etc.) et MongoDB (stockage des messages)
-- **Java** : JDK
-
 ## Routes disponibles
 
 ### Utilisateurs

@@ -14,15 +14,6 @@
 **Envoi de messages à Pulsar** : Chaque message reçu via l'API est transformé et envoyé vers un topic Pulsar spécifique (persistent://public/default/discord-messages).
 **Ajout automatique d'un timestamp**
 
-## Prérequis
-
-**Scala** : Version 3
-**Java**
-**SBT**
-**Apache Pulsar** : Un cluster Pulsar fonctionnel
-**Pekko**
-**Circe**
-
 ## Routes
 
 ### **POST /message**

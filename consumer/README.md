@@ -15,15 +15,6 @@ Le consumer consomme des messages d'un topic Pulsar (discord-messages), les ins�
 **Décodage JSON** : Les messages sont décodés en objets Scala (Message) via Circe.
 **Stockage MongoDB** : Insertion automatique de chaque message dans la base de données MongoDB discordMongo, collection messages.
 
-## Prérequis
-
-**Scala** : version 3
-**Pekko Streams** : pour consommer les flux Pulsar.
-**Pulsar4s** : bibliothèque Scala pour Pulsar.
-**ZIO** : utilisé pour la gestion des WebSocket, la queue de traitement parallèle et le serveur HTTP.
-**MongoDB Scala Driver** : pour stocker les messages.
-**Circe** : pour la désérialisation JSON.
-
 ## Structure des Messages reçus
 
 ```json

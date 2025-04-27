@@ -36,14 +36,6 @@ Envoi et réception de messages en temps réel dans des chats privés.
 Navigation intuitive avec une barre latérale pour accéder aux serveurs et aux chats privés.
 Design inspiré de Discord avec des couleurs sombres et des transitions fluides.
 
-## Prérequis
-
-- **Node.js** : Version 14 ou supérieure.
-- **npm** : Version 6 ou supérieure.
-- **Vue.js** : Framework utilisé pour le développement de l'interface.
-- **Pinia** : Gestionnaire d'état pour Vue.js.
-- **Backend** : Une API REST fonctionnelle (voir le README de `adminapi` pour les détails).
-
 ## Structure du projet
 
 **public/** : Contient les fichiers statiques accessibles directement par le navigateur, comme index.html (le fichier HTML principal) et les ressources publiques (images, icônes, etc.).
