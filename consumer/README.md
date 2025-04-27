@@ -1,30 +1,55 @@
-# Sample Pekko HTTP server
+# Module Consommateur
 
-This is a sample Pekko HTTP endpoint keeping an in-memory database of users that can be created and listed.
+Ce module fait partie du projet `discord_scala` et est responsable de la consommation et du traitement des messages provenant d'une source spécifiée.
 
-Sources in the sample:
+## Fonctionnalités
 
-* `QuickstartApp.scala` -- contains the main method which bootstraps the application
-* `UserRoutes.scala` -- Pekko HTTP `routes` defining exposed endpoints
-* `UserRegistry.scala` -- the actor which handles the registration requests
-* `JsonFormats.scala` -- converts the JSON data from requests into Scala types and from Scala types into JSON responses
+- Se connecte à un courtier de messages ou une API.
+- Traite les messages entrants.
+- Gère les erreurs de manière élégante.
+- Offre une extensibilité pour la gestion personnalisée des messages.
 
-## Interacting with the sample
+## Utilisation
 
-After starting the sample with `sbt run` the following requests can be made:
+Pour démarrer le consommateur, exécutez :
 
-List all users:
+```bash
+sbt run
+```
 
-    curl http://localhost:8080/users
+## Fonctionnalités principales
 
-Create a user:
+**Connexion à Pulsar** : Consommation des messages du topic persistent://public/default/discord-messages.
+**Décodage JSON** : Les messages sont décodés en objets Scala (Message) via Circe.
+**Stockage MongoDB** : Insertion automatique de chaque message dans la base de données MongoDB discordMongo, collection messages.
+**WebSocket Server** :
 
-    curl -XPOST http://localhost:8080/users -d '{"name": "Liselott", "age": 32, "countryOfResidence": "Norway"}' -H "Content-Type:application/json"
+- Démarrage d'un serveur WebSocket sur ws://localhost:8082/subscriptions.
+- Gestion dynamique des abonnements des clients aux serveurs spécifiques (SubscriptionRegistry).
+- Diffusion en temps réel aux clients abonnés aux bons serveurs.
+  **Gestion d'erreurs robuste** : Tolérance aux erreurs réseau et de parsing.
+  **Traitement concurrentiel** : Utilisation de ZIO Queue pour diffuser les messages efficacement en parallèle aux WebSocket Channels.
 
-Get the details of one user:
+## Structure des Messages
 
-    curl http://localhost:8080/users/Liselott
+{
+"id": "serverId",
+"timestamp": "2025-04-27T14:30:00Z",
+"content": "Hello World!",
+"metadata": {
+"author": "user123",
+"channel": "general"
+}
+}
 
-Delete a user:
+## Détails techniques
 
-    curl -XDELETE http://localhost:8080/users/Liselott
+**Akka Streams** : pour consommer les flux Pulsar.
+**Pulsar4s** : bibliothèque Scala pour Pulsar.
+**ZIO** : utilisé pour la gestion des WebSocket, la queue de traitement parallèle et le serveur HTTP.
+**MongoDB Scala Driver** : pour stocker les messages.
+**Circe** : pour la désérialisation JSON.
+
+## Configuration
+
+Le consommateur peut être configuré à l'aide de variables d'environnement ou d'un fichier de configuration. Mettez à jour le fichier `application.conf` dans le répertoire `resources` pour définir vos préférences.
