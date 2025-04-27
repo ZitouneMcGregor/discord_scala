@@ -1,6 +1,6 @@
 <template>
   <div class="server-layout">
-    <!-- Left Panel: Server Info + Rooms List -->
+    <!-- Left Panel -->
     <aside class="left-panel">
       <div class="server-header">
         <h1>{{ serverStore.server?.name }}</h1>
@@ -39,7 +39,7 @@
         <button v-if="isAdmin" class="btn-danger" @click="deleteServer">Supprimer</button>
       </footer>
 
-      <!-- Invite Modal -->
+      <!-- Invite modal -->
       <div v-if="showInviteModal">
         <div class="modal-overlay" @click="showInviteModal = false"></div>
         <div class="modal-box">
@@ -50,17 +50,13 @@
         </div>
       </div>
 
-      <!-- Manage Modal -->
+      <!-- Manage modal -->
       <div v-if="showGererModal">
         <div class="modal-overlay" @click="showGererModal = false"></div>
         <div class="modal-box">
           <h3>Gérer les utilisateurs</h3>
           <ul>
-            <li
-              v-for="user in serverStore.serverUsers.users || []"
-              :key="user.user_id"
-              class="manage-user"
-            >
+            <li v-for="user in serverStore.serverUsers.users || []" :key="user.user_id" class="manage-user">
               <span>{{ userMap[user.user_id] || user.user_id }}</span>
               <div class="manage-actions">
                 <button class="btn-primary" v-if="!user.admin" @click="toggleAdmin(user.user_id, true)">Promouvoir</button>
@@ -74,7 +70,7 @@
       </div>
     </aside>
 
-    <!-- Main Panel: Chat/Room Content -->
+    <!-- Main Panel -->
     <main class="main-panel">
       <div v-if="!selectedRoom" class="no-selection">
         <p>Sélectionnez un salon à gauche</p>
@@ -88,7 +84,7 @@
         <section class="messages-area" ref="messageContainer">
           <div
             v-for="msg in messages"
-            :key="msg.id + msg.ts"
+            :key="msg.ts + msg.content"
             :class="['message', { me: msg.from.id === currentUserId }]"
           >
             <div class="author">{{ msg.from.username }}</div>
@@ -103,7 +99,7 @@
         </footer>
       </div>
 
-      <!-- Edit Room Modal -->
+      <!-- Edit Room modal -->
       <div v-if="showEditRoomModal">
         <div class="modal-overlay" @click="showEditRoomModal = false"></div>
         <div class="modal-box">
@@ -118,15 +114,11 @@
       </div>
     </main>
 
-    <!-- Right Panel: Users List -->
+    <!-- Right Panel -->
     <aside class="right-panel">
       <h3>Utilisateurs</h3>
       <ul>
-        <li
-          v-for="user in serverStore.serverUsers.users"
-          :key="user.user_id"
-          :class="{ admin: user.admin }"
-        >
+        <li v-for="user in serverStore.serverUsers.users" :key="user.user_id" :class="{ admin: user.admin }">
           {{ userMap[user.user_id] || user.user_id }}
           <span v-if="user.admin" class="badge">Admin</span>
         </li>
@@ -135,22 +127,29 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../store/auth'
 import { useServerStore } from '../store/servers'
 import { useRoomStore } from '../store/room'
 import axios from 'axios'
 
+/* —— WS CONFIG */
+const WS_URL = 'ws://localhost:8082/subscriptions'
+const BASIC_USER = 'foo'
+const BASIC_PASS = 'bar'
+
+/* —— STORES & ROUTER */
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const serverStore = useServerStore()
 const roomStore = useRoomStore()
 
+/* —— REFS */
 const serverId = Number(route.params.serverId)
-const selectedRoom = ref(null)
+const selectedRoom = ref<any | null>(null)
 const newRoomName = ref('')
 const newMessage = ref('')
 const inviteUsername = ref('')
@@ -158,28 +157,113 @@ const editRoomName = ref('')
 const showInviteModal = ref(false)
 const showGererModal = ref(false)
 const showEditRoomModal = ref(false)
-const messages = ref([])
-const messageContainer = ref(null)
+const messages = ref<any[]>([])
+const messageContainer = ref<HTMLElement | null>(null)
 
+/* —— COMPUTEDS */
 const currentUserId = computed(() => authStore.user.id)
-const isAdmin = computed(
-  () => (serverStore.serverUsers.users?.some(u => u.user_id === authStore.user.id && u.admin)) || false
-)
+const isAdmin = computed(() => (serverStore.serverUsers.users?.some(u => u.user_id === authStore.user.id && u.admin)) || false)
+const userMap = computed(() => serverStore.userMap)
 
+/* —— WEBSOCKET */
+/* —— WEBSOCKET */
+let ws: WebSocket | null = null
+function connectWs() {
+  ws = new WebSocket(WS_URL)
+  ws.addEventListener('open', () => {
+    console.log('WebSocket connected')
+    if (selectedRoom.value) subscribeRoom(selectedRoom.value.id)
+  })
+  ws.addEventListener('message', handleWsMessage)
+  ws.addEventListener('error', (err) => {
+    console.error('WebSocket error', err)
+  })
+  ws.addEventListener('close', () => {
+    console.log('WebSocket disconnected')
+  })
+}
+
+function subscribeRoom(roomId: number) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    console.log(`Subscribing to room ${roomId}`)
+    ws.send(`r${roomId}`)
+  }
+}
+
+function handleWsMessage(e: MessageEvent) {
+  console.log('Raw message received:', e.data); // Vérifie si ça s'affiche
+
+  if (typeof e.data === 'string' && !e.data.trim().startsWith('{')) {
+    console.log('Non-JSON frame, skipping');
+    return;
+  }
+
+  try {
+    const msg = JSON.parse(e.data);
+    console.log('Parsed WS message:', msg); // Log l'objet parsé
+
+    // --- AJOUT DE LOGS DE DEBUG ---
+    const expectedRoomId = `r${selectedRoom.value?.id}`;
+    const receivedRoomId = msg.metadata?.roomId;
+    console.log(`[WS Debug] Selected Room: ${selectedRoom.value?.id}, Expected WS ID: ${expectedRoomId}`);
+    console.log(`[WS Debug] Received metadata:`, msg.metadata);
+    console.log(`[WS Debug] Received WS ID: ${receivedRoomId}`);
+    console.log(`[WS Debug] IDs match? : ${receivedRoomId === expectedRoomId}`);
+    // --- FIN DES LOGS DE DEBUG ---
+
+
+    // Vérifie si le message appartient au salon courant
+    if (receivedRoomId === expectedRoomId) { // Utilise les variables pour plus de clarté
+        console.log('[WS Debug] Condition passed! Adding message.'); // Log si la condition passe
+      messages.value.push({
+        id: receivedRoomId, // Utilise la variable
+        from: {
+          id: msg.metadata.fromId,
+          username: msg.metadata.fromUsername,
+        },
+        content: msg.content,
+        ts: msg.timestamp ? new Date(msg.timestamp).getTime() : Date.now(),
+      });
+
+      nextTick(() => {
+        if (messageContainer.value) {
+           messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
+        }
+      });
+    } else {
+        // Log si la condition échoue
+        console.log('[WS Debug] Condition failed. Message not added.');
+    }
+  } catch (err) {
+    console.error('WS parse error', err);
+  }
+}
+
+
+/* —— LIFECYCLE */
 onMounted(async () => {
+  connectWs()
   await roomStore.fetchRooms(serverId)
   await serverStore.fetchServerUsers(serverId)
 })
 
-async function selectRoom(room) {
-  selectedRoom.value = room
-  await loadMessages(room.id)
-}
+watch(selectedRoom, (room) => {
+  if (room) {
+    subscribeRoom(room.id)
+  }
+})
 
+/* —— ROOM ACTIONS */
 async function addRoom() {
-  if (!newRoomName.value) return
+  if (!newRoomName.value.trim()) return
   await roomStore.addRoom(serverId, newRoomName.value)
   newRoomName.value = ''
+}
+
+async function selectRoom(room: any) {
+  selectedRoom.value = room
+  await loadMessages(room.id)
+  subscribeRoom(room.id)
 }
 
 async function leaveCurrentServer() {
@@ -194,84 +278,73 @@ async function deleteServer() {
 }
 
 async function addUserOnServer() {
-  if (!inviteUsername.value) return
+  if (!inviteUsername.value.trim()) return
   await serverStore.addUserOnServer(inviteUsername.value, serverId)
   inviteUsername.value = ''
   showInviteModal.value = false
   await serverStore.fetchServerUsers(serverId)
 }
 
-async function toggleAdmin(userId, makeAdmin) {
+async function toggleAdmin(userId: number, makeAdmin: boolean) {
   await serverStore.toggleAdmin(serverId, userId, makeAdmin)
 }
 
-async function kickUser(userId) {
+async function kickUser(userId: number) {
   await serverStore.kickUser(serverId, userId)
   await serverStore.fetchServerUsers(serverId)
 }
 
+/* —— MESSAGES */
 async function sendMessage() {
-  if (!newMessage.value.trim() || !selectedRoom.value) return
-
-  const generatedId = `r${selectedRoom.value.id}`
-  const messageToSend = {
-    id: generatedId,
+  if (!newMessage.value.trim() || !selectedRoom.value) return;
+  const roomIdStr = `r${selectedRoom.value.id}`;
+  const payload = {
+    id: roomIdStr,
     content: newMessage.value.trim(),
     metadata: {
-      roomId: generatedId,
+      roomId: roomIdStr,
       fromId: authStore.user.id.toString(),
-      fromUsername: authStore.user.username
-    }
-  }
-
+      fromUsername: authStore.user.username,
+    },
+  };
   try {
-    await axios.post(
-      'http://localhost:8081/message',
-      messageToSend,
-      {
-        auth: { username: 'foo', password: 'bar' }
-      }
-    )
-    messages.value.push({
-      id: generatedId,
-      from: {
-        id: authStore.user.id.toString(),
-        username: authStore.user.username
-      },
-      content: messageToSend.content,
-      ts: Date.now()
-    })
-    newMessage.value = ''
-    await nextTick()
-    messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+    // Envoie le message au backend via HTTP
+    await axios.post('http://localhost:8081/message', payload, { auth: { username: BASIC_USER, password: BASIC_PASS } });
+
+    // --- SUPPRIMÉ ---
+    // messages.value.push({ ... }) n'est plus ici
+    // nextTick(...) pour le scroll n'est plus ici
+
+    // Vide le champ de saisie SEULEMENT APRÈS l'envoi réussi
+    newMessage.value = '';
+
   } catch (err) {
-    console.error('Erreur envoi message serveur', err)
+    console.error('Erreur envoi message', err);
+    // TODO: Peut-être afficher une erreur à l'utilisateur ici ?
+    // Par exemple, ne pas vider le champ newMessage.value en cas d'erreur
+    // pour qu'il puisse réessayer.
   }
 }
 
-async function loadMessages(roomId) {
+async function loadMessages(roomId: number) {
   try {
-    const idPropre = `r${roomId}`
-    const { data } = await axios.get(`http://localhost:8083/server/${serverId}/room/${idPropre}/messages`, {
-      auth: { username: 'foo', password: 'bar' }
-    })
+    const idStr = `r${roomId}`
+    const { data } = await axios.get(`http://localhost:8083/server/${serverId}/room/${idStr}/messages`, { auth: { username: BASIC_USER, password: BASIC_PASS } })
     if (Array.isArray(data.messages)) {
-      messages.value = data.messages.map(m => ({
-        id: idPropre,
-        from: {
-          id: m.metadata.fromId,
-          username: m.metadata.fromUsername
-        },
+      messages.value = data.messages.map((m: any) => ({
+        id: idStr,
+        from: { id: m.metadata.fromId, username: m.metadata.fromUsername },
         content: m.content,
-        ts: new Date(m.timestamp).getTime()
+        ts: new Date(m.timestamp).getTime(),
       }))
-      await nextTick()
-      messageContainer.value.scrollTop = messageContainer.value.scrollHeight
     } else {
       messages.value = []
     }
+    nextTick(() => {
+      if (messageContainer.value) messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+    })
   } catch (err) {
-    console.error('Erreur chargement messages serveur', err)
+    console.error('Erreur chargement messages', err)
   }
 }
 
@@ -287,13 +360,13 @@ async function deleteSelectedRoom() {
   selectedRoom.value = null
 }
 
-const userMap = computed(() => serverStore.userMap)
-
-function formatTime(ts) {
+function formatTime(ts: number) {
   const d = new Date(ts)
-  return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`
+  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
 }
 </script>
+
+
 
 <style scoped>
 /* ---------------------------------------------------------------- Layout */
