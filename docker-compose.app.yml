@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   vite-app:
     container_name: vite-vue-app
@@ -8,6 +7,8 @@ services:
       dockerfile: Dockerfile.vite
     ports:
       - "5173:80"
+    networks:
+      - app-network
 
   admin-api:
     container_name: admin-api
@@ -24,6 +25,8 @@ services:
       POSTGRESQL_ADDON_PASSWORD: 1234567aA*
     depends_on:
       - adminbdd
+    networks:
+      - app-network
 
   adminbdd:
     image: postgres:15
@@ -38,41 +41,28 @@ services:
     volumes:
       - ./bdd_postgres.sql:/docker-entrypoint-initdb.d/bdd.sql
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
 
   pulsar:
     image: apachepulsar/pulsar:latest
     container_name: pulsar
     command: bin/pulsar standalone
     ports:
-      - "6650:6650"     # Port Pulsar client
-      - "8085:8080"     # Port HTTP Pulsar admin API (optionnel pour dashboard/admin)
+      - "6650:6650" # Port Pulsar client
+      - "8085:8080" # Pulsar Web UI
     volumes:
       - pulsar-data:/pulsar/data
       - pulsar-logs:/pulsar/logs
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "bin/pulsar-admin", "brokers", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
-  
-  consumer:
-    container_name: consumer
-    build:
-      context: .
-      dockerfile: Dockerfile.consumer
-    ports:
-      - "8082:8082"
-    depends_on:
-      - pulsar
-    environment:
-      PULSAR_HOST: pulsar
-  producer:
-    container_name: producer
-    build:
-      context: .
-      dockerfile: Dockerfile.producer
-    depends_on:
-      - pulsar
-    environment:
-      PULSAR_HOST: pulsar
-
-  
   chatapi:
     container_name: chatapi
     build:
@@ -81,9 +71,50 @@ services:
     ports:
       - "8083:8083"
     depends_on:
-      - pulsar
+      pulsar:
+        condition: service_healthy
     environment:
       PULSAR_HOST: pulsar
+      PULSAR_SERVICE_URL: pulsar://pulsar:6650
+    networks:
+      - app-network
+
+  consumer:
+    container_name: consumer
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    ports:
+      - "8082:8082"
+    depends_on:
+      pulsar:
+        condition: service_healthy
+    restart: on-failure
+    environment:
+      PULSAR_HOST: pulsar
+      PULSAR_SERVICE_URL: pulsar://pulsar:6650
+    networks:
+      - app-network
+
+  producer:
+    container_name: producer
+    build:
+      context: .
+      dockerfile: Dockerfile.producer
+    ports:
+      - "8081:8081"
+    depends_on:
+      pulsar:
+        condition: service_healthy
+    environment:
+      PULSAR_HOST: pulsar
+      PULSAR_SERVICE_URL: pulsar://pulsar:6650
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   pgdata:
