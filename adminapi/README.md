@@ -2,6 +2,13 @@
 
 AdminAPI est une application basée sur Akka HTTP qui permet de gérer des utilisateurs, des serveurs, des salons, et des chats privés. Elle utilise une base de données PostgreSQL pour le stockage des données et est conçue pour fonctionner sur Clever Cloud.
 
+## Lancer application
+
+3. Lancez l'application avec SBT :
+   ```bash
+   sbt run
+   ```
+
 ## Fonctionnalités
 
 - **Gestion des utilisateurs** :

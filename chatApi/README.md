@@ -1,6 +1,14 @@
 # ChatApi
 
 ChatApi est une application développée en Scala qui fournit une API pour gérer des fonctionnalités de chat en temps réel. Elle est conçue pour être performante, extensible et facile à intégrer dans des systèmes existants.
+Le ChatApi lit les messages depuis MongoDB pour fournir l'historique des messages d'une salle et récupérer les messages privés entre utilisateurs.
+
+## Lancer application
+
+3. Lancez l'application avec SBT :
+   ```bash
+   sbt run
+   ```
 
 ## Fonctionnalités
 
@@ -14,20 +22,11 @@ ChatApi est une application développée en Scala qui fournit une API pour gére
 ## Prérequis
 
 - **Scala** : Version 3.
-- **SBT** : Version 1.5 ou supérieure.
+- **SBT**
 - **Base de données** : PostgreSQL (gestion des utilisateurs, salles, etc.) et MongoDB (stockage des messages)
-- **Java** : JDK 11 ou supérieur.
+- **Java** : JDK
 
-3. Lancez l'application avec SBT :
-   ```bash
-   sbt run
-   ```
-
-## Architecture
-
-Le ChatApi lit les messages depuis MongoDB pour fournir l'historique des messages d'une salle et récupérer les messages privés entre utilisateurs.
-
-## Endpoints
+## Routes disponibles
 
 ### Utilisateurs
 
