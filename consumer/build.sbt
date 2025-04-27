@@ -1,4 +1,5 @@
 import sbt.Keys.libraryDependencies
+import sbtassembly.AssemblyPlugin.autoImport._
 
 lazy val pekkoHttpVersion = "1.1.0"
 lazy val pekkoVersion     = "1.1.2"
@@ -26,3 +27,10 @@ lazy val root = (project in file(".")).
       "dev.zio" %% "zio-http" % "3.2.0"
     )
   )
+
+  assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case PathList("reference.conf") => MergeStrategy.concat
+  case PathList("application.conf") => MergeStrategy.concat
+  case _ => MergeStrategy.first
+}

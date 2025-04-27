@@ -1,0 +1,26 @@
+# Étape 1 : Build app
+FROM node:20 AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+# Étape 2 : Serveur NGINX
+FROM nginx:stable-alpine
+
+# Supprimer la config nginx par défaut
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Ajouter notre propre config nginx
+COPY nginx.conf /etc/nginx/conf.d
+
+# Copier les fichiers compilés
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
