@@ -91,13 +91,11 @@ object consumer {
                     println(s"[Consumer Akka Stream] No channels found for ID ${message.id}, skipping enqueue.")
                 }
 
-            case Left(err: io.circe.Error) => 
-              println(s"[Consumer Akka Stream] Error decoding message: ${err.getMessage}")
+            case Left(error) =>
+              println(s"Erreur lors du décodage du message: $error")
           }
 
-        consumer.acknowledge(msg.messageId)
-        () 
-      }
-      .run()
-  }
+          consumer.acknowledge(msg.messageId)
+        }.run()
+    }
 }
