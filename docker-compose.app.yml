@@ -3,13 +3,11 @@ version: '3.8'
 services:
   vite-app:
     container_name: vite-vue-app
-    image: node:20
-    working_dir: /app
-    volumes:
-      - ./discord-client:/app
+    build:
+      context: ./discord-client
+      dockerfile: Dockerfile.vite
     ports:
-      - "5173:5173"
-    command: sh -c "npm install && npm run dev -- --host"
+      - "5173:80"
 
   admin-api:
     container_name: admin-api
@@ -52,16 +50,18 @@ services:
       - pulsar-data:/pulsar/data
       - pulsar-logs:/pulsar/logs
 
+  
   consumer:
     container_name: consumer
     build:
       context: .
       dockerfile: Dockerfile.consumer
+    ports:
+      - "8082:8082"
     depends_on:
       - pulsar
     environment:
       PULSAR_HOST: pulsar
-
   producer:
     container_name: producer
     build:
@@ -72,16 +72,18 @@ services:
     environment:
       PULSAR_HOST: pulsar
 
+  
   chatapi:
     container_name: chatapi
     build:
       context: .
       dockerfile: Dockerfile.chatapi
+    ports:
+      - "8083:8083"
     depends_on:
       - pulsar
     environment:
       PULSAR_HOST: pulsar
-
 
 volumes:
   pgdata:
