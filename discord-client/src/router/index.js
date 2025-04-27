@@ -30,12 +30,6 @@ const routes = [
     name: 'Profile',
     component: ProfileView,
     meta: { requiresAuth: true } 
-  },
-  {
-	path: '/dm/:userId',
-	name: 'DMView',
-	component: () => import('../views/DMView.vue'),
-	meta: { requiresAuth: true }
   }
   
   
