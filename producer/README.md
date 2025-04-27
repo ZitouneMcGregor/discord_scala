@@ -1,32 +1,56 @@
-This is an example Akka HTTP application that works with PostgreSQL on Clever Cloud.
+# Producer
 
-# Features
-Project generated from Akka Github [quick start template](https://github.com/akka/akka-http-quickstart-scala.g8).
+**Producer** est un service backend basé sur Apache Pekko HTTP (anciennement Akka HTTP), conçu pour produire des messages dans une file d'attente Pulsar. Il expose une API REST sécurisée avec une authentification basique et utilise `pulsar4s` pour communiquer avec Pulsar.
 
-This service provides the ability to manage a simple in-memory user registry exposing 4 routes:
-- List all users
-- Get a specific user
-- Create a user
-- Delete a user
+## Fonctionnalités
 
-A thorough  description of the cURL commands may be found [here](https://developer.lightbend.com/guides/akka-http-quickstart-scala/#cURL-commands)
+### API REST
 
-A few functionalities have been added on top of the original example:
-- store the registry into a PostgreSQL database
-- read database parameters from  Clever Cloud standard environment variables
-- add basic authentication (`foo:bar`)
+- Endpoint pour envoyer des messages à une file d'attente Pulsar.
+- Authentification basique pour sécuriser les requêtes.
 
-# Configuration
-Configuration parameters are located in the [application.conf](src/main/resources/application.conf)
-You can edit parameters for
-- basic-auth
-- PostgreSQL database
+### Intégration avec Pulsar
 
-# Database creation
-The program uses [Flyway sbt plugin](https://github.com/flyway/flyway-sbt) in order to create the database table automatically.
-It requires a hook run before the program starts. Just set in the application environment the variable `CC_PRE_RUN_HOOK` with the value `sbt flywayMigrate`
+- Envoi de messages dans un topic Pulsar.
+- Utilisation de `pulsar4s` pour interagir avec Pulsar.
 
-# Installation
-To install it, simply fork this repository and create an application from your GitHub repo. Then create a PostgreSQL add-on and link it to your application, either via the Clever Tools CLI or via the Clever Cloud console.
+### Configuration flexible
 
-That's it, the application will use the environment variables to connect to the PostgreSQL DB.
+- Variables d'environnement pour configurer l'authentification et d'autres paramètres.
+- Support de CORS pour permettre les requêtes cross-origin.
+
+## Prérequis
+
+- **Java** : Version 11 ou supérieure.
+- **SBT** : Pour compiler et exécuter le projet.
+- **Apache Pulsar** : Un cluster Pulsar fonctionnel (local ou distant).
+- **Variables d'environnement** :
+  - `BASIC_AUTH_USER` : Nom d'utilisateur pour l'authentification basique.
+  - `BASIC_AUTH_PASSWORD` : Mot de passe pour l'authentification basique.
+
+## Exécution
+
+Pour lancer le service, utilisez la commande suivante :
+
+```bash
+sbt run
+```
+
+## Routes
+
+### **POST /message**
+
+Permet d'envoyer un message dans un topic Pulsar.
+
+#### Exemple de corps de requête JSON :
+
+```json
+{
+  "id": "123",
+  "content": "Hello, world!",
+  "metadata": {
+    "key1": "value1",
+    "key2": "value2"
+  }
+}
+```
