@@ -1,13 +1,14 @@
 // store/servers.js
 import { defineStore } from 'pinia';
 import axios from 'axios';
+import api from '../plugins/axios'
 
 export const useServerStore = defineStore('servers', {
   state: () => ({
     allServers: [],
     userServers: [],
     unjoinedServers: [],
-    serverUsers: [],
+    serverUsers: { users: [] },
     userMap: {} // new state to store id -> username mapping
   }),
 
@@ -23,10 +24,11 @@ export const useServerStore = defineStore('servers', {
 
     async fetchUserServers(userId) {
       try {
-        const response = await axios.get(`http://localhost:8080/users/${userId}/servers`);
-        this.userServers = response.data.servers;
-      } catch (error) {
-        console.error('Erreur fetchUserServers', error);
+        const { data } = await api.get(`/users/${userId}/servers`)
+        this.userServers = data.servers || []
+      } catch (err) {
+        console.error('[servers] fetchUserServers error', err)
+        this.userServers = []
       }
     },
 
