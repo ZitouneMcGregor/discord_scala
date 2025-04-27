@@ -55,7 +55,8 @@ object consumer {
 
       given schema: Schema[Array[Byte]] = Schema.BYTES
 
-      val client = PulsarClient("pulsar://localhost:6650")
+      val pulsarHost = sys.env.getOrElse("PULSAR_HOST", "localhost")
+      val client = PulsarClient(s"pulsar://$pulsarHost:6650")
       val topic = Topic("persistent://public/default/discord-messages")
 
       val consumer = client.consumer(ConsumerConfig(Subscription("mysub"), Seq(topic)))

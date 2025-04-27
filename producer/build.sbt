@@ -1,4 +1,5 @@
 import sbt.Keys.mappings.*
+import sbtassembly.AssemblyPlugin.autoImport._
 
 lazy val pekkoHttpVersion = "1.1.0"
 lazy val pekkoVersion     = "1.1.3"
@@ -33,3 +34,10 @@ lazy val root = (project in file("."))
     "com.clever-cloud.pulsar4s" %% "pulsar4s-circe" % pulsar4sVersion
   )
 )
+
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case PathList("reference.conf") => MergeStrategy.concat
+  case PathList("application.conf") => MergeStrategy.concat
+  case _ => MergeStrategy.first
+}

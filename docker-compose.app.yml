@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  vite-app:
+    container_name: vite-vue-app
+    image: node:20
+    working_dir: /app
+    volumes:
+      - ./discord-client:/app
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host"
+
+  admin-api:
+    container_name: admin-api
+    build:
+      context: .
+      dockerfile: Dockerfile.adminapi
+    ports:
+      - "8080:8080"
+    environment:
+      POSTGRESQL_ADDON_HOST: adminbdd
+      POSTGRESQL_ADDON_PORT: 5432
+      POSTGRESQL_ADDON_DB: AdminDiscord
+      POSTGRESQL_ADDON_USER: admin
+      POSTGRESQL_ADDON_PASSWORD: 1234567aA*
+    depends_on:
+      - adminbdd
+
+  adminbdd:
+    image: postgres:15
+    container_name: adminbdd
+    restart: always
+    environment:
+      POSTGRES_USER: "admin"
+      POSTGRES_PASSWORD: "1234567aA*"
+      POSTGRES_DB: "AdminDiscord"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./bdd_postgres.sql:/docker-entrypoint-initdb.d/bdd.sql
+      - pgdata:/var/lib/postgresql/data
+
+  pulsar:
+    image: apachepulsar/pulsar:latest
+    container_name: pulsar
+    command: bin/pulsar standalone
+    ports:
+      - "6650:6650"     # Port Pulsar client
+      - "8085:8080"     # Port HTTP Pulsar admin API (optionnel pour dashboard/admin)
+    volumes:
+      - pulsar-data:/pulsar/data
+      - pulsar-logs:/pulsar/logs
+
+  consumer:
+    container_name: consumer
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    depends_on:
+      - pulsar
+    environment:
+      PULSAR_HOST: pulsar
+
+  producer:
+    container_name: producer
+    build:
+      context: .
+      dockerfile: Dockerfile.producer
+    depends_on:
+      - pulsar
+    environment:
+      PULSAR_HOST: pulsar
+
+  chatapi:
+    container_name: chatapi
+    build:
+      context: .
+      dockerfile: Dockerfile.chatapi
+    depends_on:
+      - pulsar
+    environment:
+      PULSAR_HOST: pulsar
+
+
+volumes:
+  pgdata:
+  pulsar-data:
+  pulsar-logs:

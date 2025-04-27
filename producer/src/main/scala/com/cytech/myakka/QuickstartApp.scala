@@ -34,8 +34,9 @@ object QuickstartApp {
     // Load configuration
     val config = ConfigFactory.load("application.conf")
     val authConfig = BasicAuthConfig(config)
-    val client = PulsarClient("pulsar://localhost:6650")
-    
+    val pulsarHost = sys.env.getOrElse("PULSAR_HOST", "localhost")
+    val client = PulsarClient(s"pulsar://$pulsarHost:6650")
+        
     val rootBehavior = Behaviors.setup[Nothing] { context =>
       context.log.info("Starting MessageActor")
       val messageActor = context.spawn(MessageActor(client), "MessageActor")

@@ -1,0 +1,24 @@
+FROM openjdk:21-jdk-slim AS builder
+
+# Installer SBT et Scala dans l'image
+RUN apt-get update && \
+    apt-get install -y curl gnupg && \
+    curl -sL https://github.com/sbt/sbt/releases/download/v1.10.0/sbt-1.10.0.tgz | tar xz -C /usr/local --strip-components=1 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY producer/ ./producer/
+
+WORKDIR /app/producer
+
+RUN sbt reload clean assembly
+
+# ---- runtime ----
+FROM openjdk:21-jdk-slim
+
+WORKDIR /app
+
+COPY --from=builder /app/producer/target/scala-3.3.5/myakka-assembly-0.1.0-SNAPSHOT.jar /app/producer.jar
+
+CMD ["java", "-jar", "producer.jar"]
