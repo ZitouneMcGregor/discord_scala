@@ -27,7 +27,7 @@ trait UserJsonFormats extends DefaultJsonProtocol {
 
 final case class UpdateUserRequest(newUsername: String, newPassword: String)
 object UpdateUserRequest {
-  implicit val format: RootJsonFormat[UpdateUserRequest] =
+  given format: RootJsonFormat[UpdateUserRequest] =
     jsonFormat2(UpdateUserRequest.apply)
 }
 

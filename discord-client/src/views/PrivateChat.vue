@@ -10,8 +10,8 @@
         <li
           v-for="chat in chats"
           :key="chat.id"
-          :class="['chat-entry', { selected: pcStore.selectedChat && pcStore.selectedChat.id === chat.id }]"
-        >
+          :class="['chat-entry', { selected: pcStore.selectedChat && pcStore.selectedChat.id === chat.id }]
+        ">
           <button class="chat-item-content" @click="pcStore.selectChat(chat)">
             {{ otherPseudo(chat) }}
           </button>
@@ -28,7 +28,7 @@
             placeholder="Chercher un utilisateur…"
             class="create-server-input"
             @focus="showSug = true"
-            @blur="() => setTimeout(()=>showSug=false,200)"
+            @blur="onSearchBlur"
             @input="showSug = true"
           />
           <ul v-if="showSug && sug.length" class="suggestions above">
@@ -49,8 +49,8 @@
         <div
           v-for="m in msgs"
           :key="m.ts + m.content"
-          :class="['message', { me: Number(m.metadata.fromId) === meId }]"
-        >
+          :class="['message', { me: Number(m.metadata.fromId) === meId }]
+        ">
           <div class="author">{{ m.metadata.fromUsername }}</div>
           <div class="content">{{ m.content }}</div>
           <div class="ts">{{ fmt(m.ts) }}</div>
@@ -112,38 +112,54 @@ watch(msgs, () => nextTick(()=>{ msgArea.value && (msgArea.value.scrollTop = msg
 /* ---------------- autocomplete ---------------- */
 watch(search, async v => {
   picked.value = null
-  if(v.trim().length<2){ sug.value=[]; return }
-  const { data } = await api.get(`/users/search?username=${encodeURIComponent(v)}`)
-  sug.value = (Array.isArray(data)?data:data.users).slice(0,3)
+  const term = v.trim()
+  const { data } = await api.get(
+    `/users/search?username=${encodeURIComponent(term)}`
+  )
+  sug.value = (Array.isArray(data) ? data : data.users).slice(0, 3)
 })
-function pick(u){ picked.value=u; search.value=u.username; sug.value=[]; showSug.value=false }
 
-/* ---------------- actions ---------------- */
-async function create(){
-  if(!picked.value) return
-  await pcStore.createPrivateChat(meId.value, picked.value.id)
-  names.value[picked.value.id] = picked.value.username
-  search.value=''; picked.value=null
+function onSearchBlur() {
+  window.setTimeout(() => {
+    showSug.value = false
+  }, 200)
 }
 
-function del(id){ pcStore.deletePrivateChat(meId.value,id) }
+function pick(u) {
+  picked.value = u
+  search.value = u.username
+  sug.value = []
+  showSug.value = false
+}
 
-async function send(){
-  if(!draft.value.trim()||!pcStore.selectedChat) return
+/* ---------------- actions ---------------- */
+async function create() {
+  if (!picked.value) return
+  await pcStore.createPrivateChat(meId.value, picked.value.id)
+  names.value[picked.value.id] = picked.value.username
+  search.value = ''
+  picked.value = null
+}
+
+function del(id) { pcStore.deletePrivateChat(meId.value,id) }
+
+async function send() {
+  if (!draft.value.trim() || !pcStore.selectedChat) return
   await axios.post('http://localhost:8081/message', {
-    id:`pc${pcStore.selectedChat.id}`,
-    content:draft.value.trim(),
-    metadata:{ chatId:`pc${pcStore.selectedChat.id}`, fromId:meId.value.toString(), fromUsername:auth.user.username }
-  }, { auth:{ username:'foo', password:'bar' } })
-  draft.value=''
+    id: `pc${pcStore.selectedChat.id}`,
+    content: draft.value.trim(),
+    metadata: { chatId: `pc${pcStore.selectedChat.id}`, fromId: meId.value.toString(), fromUsername: auth.user.username }
+  }, { auth: { username: 'foo', password: 'bar' } })
+  draft.value = ''
 }
 
 /* ---------------- helpers ---------------- */
-function otherPseudo(chat){
-  const other = chat.user_id_1===meId.value? chat.user_id_2 : chat.user_id_1
+function otherPseudo(chat) {
+  const other = chat.user_id_1 === meId.value ? chat.user_id_2 : chat.user_id_1
   return names.value[other] || `User#${other}`
 }
-function fmt(ts){ const d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) }
+
+function fmt(ts) { const d = new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) }
 </script>
 
 <style scoped>
