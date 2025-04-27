@@ -163,4 +163,48 @@ function fmt(ts){ const d=new Date(ts); return d.toLocaleTimeString([], {hour:'2
 .author{font-weight:bold;margin-bottom:4px}.message .ts{font-size:.75rem;color:#ffffff;margin-top:4px}
 .message-form{display:flex;gap:10px}.btn-primary{background:#5865f2;color:#fff;border:none;border-radius:0 4px 4px 0;padding:8px 16px;cursor:pointer}.btn-primary:hover{background:#4752c4}
 .chat-placeholder{flex:1;display:flex;align-items:center;justify-content:center;color:#72767d;font-style:italic}
+
+/* ---------------- bulle de message ---------------- */
+.message {
+  max-width: 70%;                  /* un peu plus large (ou 60%)        */
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background: #202225;
+  line-height: 1.4;
+  font-size: 0.95rem;
+
+  /* --- nouvelles protections pour le long texte --- */
+  overflow-wrap: anywhere;         /* force la coupure des mots trop longs */
+  word-break: break-word;          /* fallback vieux navigateurs            */
+  white-space: pre-wrap;           /* respecte les retours à la ligne \n    */
+}
+
+.message.me {
+  margin-left: auto;
+  background: #4b5ef8;             /* un bleu un peu moins saturé         */
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,.25);
+}
+
+.message .author {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.message .ts {
+  font-size: 0.75rem;
+  text-align: right;
+  margin-top: 6px;
+  opacity: .7;
+}
+
+/* ---------------- zone scroll ------------------ */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  padding-right: 4px;              /* évite que le texte colle à la barre */
+}
+
 </style>

@@ -2,6 +2,8 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
 import api from '../plugins/axios'
+import { wsService } from '../store/wsService'   // ← bien importer
+import { useRoomStore }  from '../store/room'          // ← bien importer
 
 export const useServerStore = defineStore('servers', {
   state: () => ({
@@ -170,13 +172,29 @@ export const useServerStore = defineStore('servers', {
 
     async kickUser(serverId, userId) {
       try {
-        const response = await axios.delete(`http://localhost:8080/servers/${serverId}/users/${userId}`);
-        if (response.status === 200) {
-          console.log(`Utilisateur ${userId} retiré du serveur ${serverId}`);
-          await this.fetchServerUsers(serverId);
+        const res = await axios.delete(
+          `http://localhost:8080/servers/${serverId}/users/${userId}`
+        )
+        if (res.status === 200) {
+          console.log(`Utilisateur ${userId} retiré du serveur ${serverId}`)
+  
+          await this.fetchServerUsers(serverId)
+  
+          const toUnsubscribe = new Set(
+            useRoomStore.rooms
+              .filter(r => r.serverId === serverId)
+              .map(r => `r${r.id}`)
+          )
+  
+          wsService.removeWatchIds(toUnsubscribe)
+  
+          console.log(
+            'WS unsubscribed from rooms:',
+            Array.from(toUnsubscribe).join(', ')
+          )
         }
-      } catch (error) {
-        console.error(`Erreur lors du kick de l'utilisateur ${userId}`, error);
+      } catch (err) {
+        console.error('Erreur lors du kick:', err)
       }
     },
 

@@ -57,10 +57,21 @@ export const useRoomStore = defineStore('rooms', {
     },
 
     /** MAJ ou suppression d’un salon */
-    async updateRoom(roomId, payload) {
-      await api.put(`/rooms/${roomId}`, payload)
-      await this.fetchRooms(this.serverId)
-      this._watchAll()
+    async updateRoom(roomId, newName, serverId) {
+      try {
+        const roomPayload = {
+          id: roomId,        // un entier, pas d’objet
+          name: newName,
+          serverId,          // si vous devez aussi l’envoyer
+        };
+        const response = await api.put(`http://localhost:8080/rooms/${roomId}`, roomPayload);
+        if (response.status === 200) {
+          console.log('Room mise à jour avec succès');
+          await this.fetchRooms(serverId);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour de la room', error.response?.data || error);
+      }
     },
     async deleteRoom(roomId) {
       await api.delete(`/rooms/${roomId}`)
@@ -95,7 +106,7 @@ export const useRoomStore = defineStore('rooms', {
         this.messages[`r${roomId}`] = []
       }
     },
-    
+
     _watchAll() {
       const authStore = useAuthStore()
       const userId = authStore?.user?.id

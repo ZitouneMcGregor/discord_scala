@@ -32,77 +32,63 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
-import { useRouter }          from 'vue-router'
-import { useAuthStore }       from '../store/auth'
-import { useServerStore }     from '../store/servers'
-import { useRoomStore }       from '../store/room'
+import { onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '../store/auth'
+import { useServerStore } from '../store/servers'
+import { useRoomStore } from '../store/room'
 import { usePrivateChatStore } from '../store/privateChats'
+import { wsService } from '../store/wsService'
 
 const router      = useRouter()
+const route       = useRoute()
 const authStore   = useAuthStore()
 const serverStore = useServerStore()
 const roomStore   = useRoomStore()
 const pcStore     = usePrivateChatStore()
 
-/* ---------------- WebSocket ---------------- */
-const WS_URL = 'ws://localhost:8082/subscriptions'
-let ws: WebSocket | null = null
-
-function connectWs () {
-  if (ws && ws.readyState === WebSocket.OPEN) return
-  ws = new WebSocket(WS_URL)
-
-  ws.addEventListener('open', sendSubscriptions)
-  ws.addEventListener('close', () => setTimeout(connectWs, 3000))
-  ws.addEventListener('error', e => console.error('[WS] error', e))
+function goHome() {
+  router.push('/home')
+}
+function goToServer(serverId) {
+  router.push(`/server/${serverId}`)
+  const roomIds = roomStore.rooms
+    .filter(r => r.id != null)
+    .map(r => `r${r.id}`)
+  wsService.addWatchIds(roomIds)
 }
 
-async function sendSubscriptions () {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return
-  const me = authStore.user
-  if (!me) return
+function goToDM() {
+  router.push(`/dm/${authStore.user!.id}`)
+}
 
+async function computeWatchIds() {
+  // 1. all servers the user is in
   const serverIds = serverStore.userServers.map(s => s.id)
-
+  // 2. fetch all rooms for each server (true = force reload)
   const allRooms = (
-   await Promise.all(serverIds.map(id => roomStore.fetchRooms(id, true)))
+    await Promise.all(serverIds.map(id => roomStore.fetchRooms(id, true)))
   ).flat()
-  const rIds = allRooms
+  const roomChannels = allRooms
     .filter(r => r && r.id != null)
     .map(r => `r${r.id}`)
 
-  await pcStore.fetchPrivateChats(me.id)
-  const pcIds = pcStore.privateChats.map(c => `pc${c.id}`)
+  // 3. fetch private chats
+  await pcStore.fetchPrivateChats(authStore.user!.id)
+  const pcChannels = pcStore.privateChats.map(c => `pc${c.id}`)
 
-  const channels = [...rIds, ...pcIds].join(',')
-  ws.send(channels)
-  console.log('[Sidebar] Sent subscriptions →', channels)
+  return new Set<string>([...roomChannels, ...pcChannels])
 }
 
 onMounted(async () => {
   if (!authStore.user) return router.push('/login')
-
   await serverStore.fetchUserServers(authStore.user.id)
-  connectWs()
+
+
+  wsService.connect()
+  const allIds = await computeWatchIds()
+  wsService.addWatchIds(allIds)
 })
-
-watch(
-  () => serverStore.userServers.map((s) => s.id),
-  () => sendSubscriptions()
-)
-
-function goHome() {
-  router.push('/home')
-}
-
-function goToServer(serverId: number) {
-  router.push(`/server/${serverId}`)
-}
-
-function goToDM() {
-  router.push(`/dm/${authStore.user.id}`)
-}
 </script>
 
 <style scoped>

@@ -10,36 +10,20 @@ import Helpers.*
 import org.mongodb.scala.result.InsertOneResult
 import zio.http.ChannelEvent.Read
 import zio.http.WebSocketFrame
-import zio.http.WebSocketChannel
-import zio.* 
+import zio.*
+import zio.{Runtime, Unsafe}
+
+
 
 import java.time.Instant
-import scala.util.control.NonFatal
 
   case class Message(id: String, timestamp: Instant, content: String, metadata: Map[String, String])
 
 object consumer {
 
-  type MessageToSend = (String, List[WebSocketChannel])
 
-  private val sendQueue: Queue[MessageToSend] = Unsafe.unsafe { implicit u =>
-    Runtime.default.unsafe.run(Queue.unbounded[MessageToSend]).getOrThrow()
-  }
 
-  private val processQueue: ZIO[Any, Nothing, Unit] =
-    sendQueue.take.flatMap { case (msgStr, channels) =>
-      println(s"[Consumer ZIO Processor] Dequeued message. Attempting to send to ${channels.size} channels.")
-      ZIO.foreachPar(channels) { channel =>
-        println(s"[Consumer ZIO Processor] Attempting to send to channel: $channel")
-        channel.send(Read(WebSocketFrame.text(msgStr)))
-          .tapError(e => ZIO.succeed(println(s"[Consumer ZIO Processor] ERROR sending to $channel: ${e.getMessage}")))
-          .tap(_ => ZIO.succeed(println(s"[Consumer ZIO Processor] SUCCESS sending to $channel")))
-          .ignore 
-      }
-      .ignore
-    }.forever
-
-  def main(args: Array[String]): Unit = {
+    def main(args: Array[String]): Unit = {
 
 
 
@@ -59,11 +43,6 @@ object consumer {
       val topic = Topic("persistent://public/default/discord-messages")
 
       val consumer = client.consumer(ConsumerConfig(Subscription("mysub"), Seq(topic)))
-
-      Unsafe.unsafe { implicit u =>
-        Runtime.default.unsafe.run(processQueue.forkDaemon)
-      }
-
       val control = source(() => consumer, Some(MessageId.latest))
         .map { msg =>
           val msgStr = new String(msg.data, "UTF-8")
@@ -81,21 +60,18 @@ object consumer {
 
           decode[Message](msgStr) match {
             case Right(message) =>
-                SubscriptionRegistry.getChannels(message.id) match {
-                  case channels if channels.nonEmpty =>
-                    val offerEffect = sendQueue.offer((msgStr, channels.toList))
-                    Unsafe.unsafe { implicit u =>
-                      Runtime.default.unsafe.run(offerEffect.ignore)
-                    }
-                  case _ =>
-                    println(s"[Consumer Akka Stream] No channels found for ID ${message.id}, skipping enqueue.")
+                val channels = SubscriptionRegistry.getChannels(message.id)
+                val sendEffects = ZIO.foreach(channels) { channel =>
+                  channel.send(Read(WebSocketFrame.text(msgStr)))
                 }
-
+                Unsafe.unsafe { implicit u: Unsafe =>
+                  Runtime.default.unsafe.run(sendEffects)
+                }
             case Left(error) =>
               println(s"Erreur lors du décodage du message: $error")
           }
-
+          
           consumer.acknowledge(msg.messageId)
         }.run()
     }
-}
+  }
