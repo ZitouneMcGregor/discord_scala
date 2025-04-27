@@ -1,13 +1,16 @@
 // store/servers.js
 import { defineStore } from 'pinia';
 import axios from 'axios';
+import api from '../plugins/axios'
+import { wsService } from '../store/wsService'   // ← bien importer
+import { useRoomStore }  from '../store/room'          // ← bien importer
 
 export const useServerStore = defineStore('servers', {
   state: () => ({
     allServers: [],
     userServers: [],
     unjoinedServers: [],
-    serverUsers: [],
+    serverUsers: { users: [] },
     userMap: {} // new state to store id -> username mapping
   }),
 
@@ -23,10 +26,11 @@ export const useServerStore = defineStore('servers', {
 
     async fetchUserServers(userId) {
       try {
-        const response = await axios.get(`http://localhost:8080/users/${userId}/servers`);
-        this.userServers = response.data.servers;
-      } catch (error) {
-        console.error('Erreur fetchUserServers', error);
+        const { data } = await api.get(`/users/${userId}/servers`)
+        this.userServers = data.servers || []
+      } catch (err) {
+        console.error('[servers] fetchUserServers error', err)
+        this.userServers = []
       }
     },
 
@@ -168,13 +172,29 @@ export const useServerStore = defineStore('servers', {
 
     async kickUser(serverId, userId) {
       try {
-        const response = await axios.delete(`http://localhost:8080/servers/${serverId}/users/${userId}`);
-        if (response.status === 200) {
-          console.log(`Utilisateur ${userId} retiré du serveur ${serverId}`);
-          await this.fetchServerUsers(serverId);
+        const res = await axios.delete(
+          `http://localhost:8080/servers/${serverId}/users/${userId}`
+        )
+        if (res.status === 200) {
+          console.log(`Utilisateur ${userId} retiré du serveur ${serverId}`)
+  
+          await this.fetchServerUsers(serverId)
+  
+          const toUnsubscribe = new Set(
+            useRoomStore.rooms
+              .filter(r => r.serverId === serverId)
+              .map(r => `r${r.id}`)
+          )
+  
+          wsService.removeWatchIds(toUnsubscribe)
+  
+          console.log(
+            'WS unsubscribed from rooms:',
+            Array.from(toUnsubscribe).join(', ')
+          )
         }
-      } catch (error) {
-        console.error(`Erreur lors du kick de l'utilisateur ${userId}`, error);
+      } catch (err) {
+        console.error('Erreur lors du kick:', err)
       }
     },
 

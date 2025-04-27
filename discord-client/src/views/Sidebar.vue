@@ -1,61 +1,94 @@
 <template>
   <div class="sidebar">
+    <!-- Home icon -->
     <div class="server-icon home-icon" @click="goHome">
-      <i class="fa fa-home">H</i>
+      <i class="fa fa-home"></i>
     </div>
 
-    <div 
-      class="server-icon" 
-      v-for="server in serverStore.userServers" 
+    <!-- User servers -->
+    <div
+      v-for="server in serverStore.userServers"
       :key="server.id"
+      class="server-icon"
       @click="goToServer(server.id)"
+      :title="server.name"
     >
-      <img 
-        v-if="server.image" 
-        :src="server.image" 
-        alt="server-logo" 
+      <!-- Show logo if available -->
+      <img
+        v-if="server.image"
+        :src="server.image"
+        alt="server-logo"
         class="server-image"
       />
-      <span v-else>
-        {{ server.name.substring(0, 2).toUpperCase() }}
-      </span>
+      <!-- Fallback to 2-letter acronym -->
+      <span v-else>{{ server.name.slice(0, 2).toUpperCase() }}</span>
     </div>
 
+    <!-- DM icon -->
     <div class="server-icon dm-icon" @click="goToDM">
       DM
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../store/auth'
 import { useServerStore } from '../store/servers'
+import { useRoomStore } from '../store/room'
+import { usePrivateChatStore } from '../store/privateChats'
+import { wsService } from '../store/wsService'
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router      = useRouter()
+const route       = useRoute()
+const authStore   = useAuthStore()
 const serverStore = useServerStore()
-
-onMounted(async () => {
-  if (!authStore.user) {
-    router.push('/login')
-    return
-  }
-  await serverStore.fetchUserServers(authStore.user.id)
-})
+const roomStore   = useRoomStore()
+const pcStore     = usePrivateChatStore()
 
 function goHome() {
   router.push('/home')
 }
-
 function goToServer(serverId) {
   router.push(`/server/${serverId}`)
+  const roomIds = roomStore.rooms
+    .filter(r => r.id != null)
+    .map(r => `r${r.id}`)
+  wsService.addWatchIds(roomIds)
 }
 
 function goToDM() {
-  router.push(`/dm/${authStore.user.id}`)
+  router.push(`/dm/${authStore.user!.id}`)
 }
+
+async function computeWatchIds() {
+  // 1. all servers the user is in
+  const serverIds = serverStore.userServers.map(s => s.id)
+  // 2. fetch all rooms for each server (true = force reload)
+  const allRooms = (
+    await Promise.all(serverIds.map(id => roomStore.fetchRooms(id, true)))
+  ).flat()
+  const roomChannels = allRooms
+    .filter(r => r && r.id != null)
+    .map(r => `r${r.id}`)
+
+  // 3. fetch private chats
+  await pcStore.fetchPrivateChats(authStore.user!.id)
+  const pcChannels = pcStore.privateChats.map(c => `pc${c.id}`)
+
+  return new Set<string>([...roomChannels, ...pcChannels])
+}
+
+onMounted(async () => {
+  if (!authStore.user) return router.push('/login')
+  await serverStore.fetchUserServers(authStore.user.id)
+
+
+  wsService.connect()
+  const allIds = await computeWatchIds()
+  wsService.addWatchIds(allIds)
+})
 </script>
 
 <style scoped>
@@ -87,7 +120,7 @@ function goToDM() {
   font-weight: bold;
   font-size: 14px;
 
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease;
 }
 .server-icon:hover {
   background-color: #3e4042;
@@ -99,7 +132,13 @@ function goToDM() {
   object-fit: cover;
 }
 
-.home-icon, .dm-icon {
-  color: yellow;
+/* Accents */
+.home-icon {
+  color: #f3c623;
+}
+.dm-icon {
+  color: #00b0f4;
+  font-size: 0.9rem;
+  line-height: 1;
 }
 </style>

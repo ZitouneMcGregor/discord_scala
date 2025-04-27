@@ -14,11 +14,9 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(username, password) {
       try {
-        // on récupère l'user pour vérifier le flag deleted
         const res = await api.get(`/users/${username}`);
         const u = res.data;
         if (u && !u.deleted) {
-          // on considère que le back a déjà validé le password via BasicAuth
           this.user = { id: u.id, username: u.username };
           localStorage.setItem('user', JSON.stringify(this.user));
           return { success: true };
@@ -26,7 +24,6 @@ export const useAuthStore = defineStore('auth', {
           return { success: false, message: 'Compte supprimé.' };
         }
       } catch (err) {
-        // 404 ou 401 → mauvais identifiants  
         return { success: false, message: 'Identifiants incorrects.' };
       }
       return { success: false, message: 'Erreur de connexion.' };
