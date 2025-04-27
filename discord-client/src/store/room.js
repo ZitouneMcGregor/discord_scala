@@ -22,7 +22,12 @@ export const useRoomStore = defineStore('rooms', {
 
   actions: {
     async setServer(serverId) {
+      // 1) on passe sur un nouveau serveur, on réinitialise l'affichage
       this.serverId = serverId
+      this.selectedRoom = null           // plus de room affichée
+      this.messages = {}                 // (optionnel) on vide les anciens messages
+
+      // 2) on recharge la liste des salons et on remets à jour le WS
       await this.fetchRooms(serverId)
       this._watchAll()
     },
@@ -80,13 +85,13 @@ export const useRoomStore = defineStore('rooms', {
       this._watchAll()
     },
 
-    /** Sélection d’un salon & chargement de l’historique */
+
     async selectRoom(room) {
       this.selectedRoom = room
       await this.loadMessages(room.id)
     },
 
-    /** Récupère l’historique via HTTP */
+
     async loadMessages(roomId) {
       if (!this.serverId) return
       try {

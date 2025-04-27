@@ -57,6 +57,7 @@ class WsService {
     if (typeof e.data !== 'string' || !e.data.trim().startsWith('{')) return
     try {
       const parsed = JSON.parse(e.data)
+      parsed.ts = parsed.timestamp ?? Date.now()
       this.bus.emit('message', parsed)
     } catch (err) {
       console.error('[WS] parse error', err)

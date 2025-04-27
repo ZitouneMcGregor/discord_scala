@@ -71,9 +71,15 @@
   <aside class="right-panel card">
     <h3>Membres</h3>
     <ul class="user-list">
-      <li v-for="u in serverStore.serverUsers.users" :key="u.user_id" :class="{admin:u.admin}">
-        {{ u.username }} <span v-if="u.admin" class="badge">Admin</span>
+      <li
+        v-for="u in serverStore.serverUsers.users"
+        :key="u.user_id"
+        :class="{ admin: u.admin }"
+      >
+        {{ userMap[u.user_id] || u.user_id }}
+        <span v-if="u.admin" class="badge">Admin</span>
       </li>
+
     </ul>
   </aside>
 
@@ -144,6 +150,7 @@ import { useAuthStore } from '../store/auth'
 import { useRoomStore } from '../store/room'
 import { useServerStore } from '../store/servers'
 import axios from 'axios'
+import { wsService } from '../store/wsService'
 
 const route      = useRoute()
 const router     = useRouter()
